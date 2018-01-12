@@ -1,0 +1,9 @@
+cd redis-misc
+sh run-file.sh
+cd ..
+cd mongo-misc
+sh run-file.sh
+cd ..
+cd top-sites
+sh run-file.sh
+cd ..

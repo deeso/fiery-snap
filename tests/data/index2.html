@@ -1,0 +1,121 @@
+<html>
+<head>
+	<title>Malware-Traffic-Analysis.net - 2017-10-10 - Malspam using CVE-2017-0199 to push Loki Bot</title>
+<link href="../../../style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+
+<center><a href="../../../index.html"><img border="0" src="../../../site-logo-01.gif"></a></center>
+
+<div id="main_content">
+<HR>
+<div class="blog_entry">
+
+<h2>2017-10-10 - MALSPAM USING CVE-2017-0199 TO PUSH LOKI BOT</h2>
+
+<p>ASSOCIATED FILES:</p>
+
+<ul>
+<li>Zip archive of the pcap:&nbsp; <a class="menu_link" href="2017-10-10-Loki-bot-malspam-traffic.pcap.zip">2017-10-10-Loki-bot-malspam-traffic.pcap.zip</a> &nbsp; 350 kB (350,219 bytes)</li>
+</ul><blockquote><ul>
+<li>2017-10-10-Loki-bot-malspam-traffic.pcap &nbsp; (633,297 bytes)</li>
+</ul></blockquote><ul>
+<li>Zip archive of the email and some associated artifacts:&nbsp; <a class="menu_link" href="2017-10-10-Loki-bot-malspam-and-artifacts.zip">2017-10-10-Loki-bot-malspam-and-artifacts.zip</a> &nbsp; 589 kB (588,789 bytes)</li>
+</ul><blockquote><ul>
+<li>2017-10-10-Loki-bot-malspam-1231-UTC.eml &nbsp; (370,939 bytes)</li>
+<li>7571BA.exe &nbsp; (675,840 bytes)</li>
+<li>REQ. FOR QUOTATION.doc &nbsp; (221,271 bytes)</li>
+</ul></blockquote>
+
+<p>NOTES:</p>
+
+<ul>
+<li>Malicious spam (malspam) with an attachment.</li>
+<li>Attachment is an RTF document with a CVE-2017-0199 exploit, and it's disguised as Word document.</li>
+<li>The exploit is designed to infect Windows hosts with Loki Bot malware.</li>
+</ul>
+
+<p>&nbsp;</p>
+
+<h2>EMAIL</h2>
+
+<p><img border="2" src="2017-10-10-Loki-bot-malspam-image-01.jpg"><br><i>Shown above:&nbsp; Screenshot of the email.</i></p>
+
+<p>&nbsp;</p>
+
+<p>EMAIL HEADERS:</p>
+
+<ul>
+<li>Date:&nbsp; Tuesday, 2017-10-10 12:31 UTC</li>
+<li>Message-ID:&nbsp; &lt;EF155C1DF6220F8C50551CA55107798F@bxgcorp.com&gt;</li>
+<li>Subject:&nbsp; News about your order2105586505244</li>
+<li>From:&nbsp; &quot;Ozean&quot; &lt;brenda.hodges@bxgcorp.com&gt;</li>
+<li>Reply-To:&nbsp; &quot;Ozean&quot; &lt;anjali@xcelcorp.com&gt;</li>
+<li>Attachment name:&nbsp; REQ. FOR QUOTATION.doc</li>
+</ul>
+
+<p>&nbsp;</p>
+
+<p><img border="2" src="2017-10-10-Loki-bot-malspam-image-02.jpg"><br><i>Shown above:&nbsp; Attachment is actually an RTF file with an exploit for CVE-2017-0199.</i></p>
+
+<p>&nbsp;</p>
+
+<h2>TRAFFIC</h2>
+
+<p><img border="2" src="2017-10-10-Loki-bot-malspam-image-03.jpg"><br><i>Shown above:&nbsp; Traffic from this infection filtered in Wireshark.</i></p>
+
+<p>&nbsp;</p>
+
+<p><img border="2" src="2017-10-10-Loki-bot-malspam-image-04.jpg"><br><i>Shown above:&nbsp; Alerts on the infection traffic using the <a class="menu_link" href="http://docs.emergingthreats.net/bin/view/Main/WebSearch">Emerging Threats</a> and ETPRO rulesets in Sguil on <a class="menu_link" href="https://securityonion.net/">Security Onion</a>.</i></p>
+
+<p>&nbsp;</p>
+
+<p>ASSOCIATED DOMAINS AND URLS:</p>
+
+<ul>
+<li>192.254.235.79 port 80 - <b>almahalliah.com</b> - GET /images/htajem.hta</li>
+<li>192.254.235.79 port 80 - <b>almahalliah.com</b> - GET /images/jem.exe</li>
+<li>194.100.58.202 port 80 - <b>www.lasihuolto.fi</b> - POST /if/panel/five/fre.php</li>
+</ul>
+
+<p>&nbsp;</p>
+
+<h2>FILE HASHES</h2>
+
+<p>RTF WITH EXPLOIT FOR CVE-2017-0199:</p>
+
+<ul>
+<li>SHA256 hash:&nbsp; <a class="menu_link" href="https://www.reverse.it/sample/34a19d2fb7e045bb1c985ed727beff59f169b3021ee67cfc462366a66ce14251?environmentId=100">34a19d2fb7e045bb1c985ed727beff59f169b3021ee67cfc462366a66ce14251</a><br>
+File size:&nbsp; 221,271 bytes<br>
+File name:&nbsp; REQ. FOR QUOTATION.doc</li>
+</ul>
+
+<p>FOLLOW-UP MALWARE (LOKI-BOT):</p>
+
+<ul>
+<li>SHA256 hash:&nbsp; <a class="menu_link" href="https://www.reverse.it/sample/54ef1c6df5b3b288366b560f7721f1cc5e556bd2fa3c8b0edee7fdb2fe871ffb?environmentId=100">54ef1c6df5b3b288366b560f7721f1cc5e556bd2fa3c8b0edee7fdb2fe871ffb</a><br>
+File size:&nbsp; 675,840 bytes<br>
+File location:&nbsp; C:\Users\<i>[username]</i>\AppData\Roaming\C72387\7571BA.exe</li>
+</ul>
+<p>&nbsp;</p>
+
+<h2>FINAL NOTES</h2>
+
+<p>Once again, here are the associated files:</p>
+
+<ul>
+<li>Zip archive of the pcap:&nbsp; <a class="menu_link" href="2017-10-10-Loki-bot-malspam-traffic.pcap.zip">2017-10-10-Loki-bot-malspam-traffic.pcap.zip</a> &nbsp; 350 kB (350,219 bytes)</li>
+<li>Zip archive of the email and some associated artifacts:&nbsp; <a class="menu_link" href="2017-10-10-Loki-bot-malspam-and-artifacts.zip">2017-10-10-Loki-bot-malspam-and-artifacts.zip</a> &nbsp; 589 kB (588,789 bytes)</li>
+</ul>
+
+<p>Zip files are password-protected with the standard password.&nbsp; If you don't know it, look at the &quot;about&quot; page of this website.</p>
+
+<p><a class="menu_link" href="../../../index.html">Click here</a> to return to the main page.</p>
+</div>
+<div id="clear"></div>
+<HR>
+<div id="footer"><strong>Copyright &copy; 2016</strong> | <a href="../../../index.html">Malware-Traffic-Analysis.net</a> </div>
+</div>
+</body>
+</html>

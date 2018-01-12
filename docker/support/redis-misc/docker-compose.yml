@@ -1,0 +1,19 @@
+version: '2'
+services:
+    redis:
+        image: myredis:latest
+        build: 
+           context: .
+           dockerfile: Dockerfile-myredis
+        volumes:
+           - /data/myredis/data:/data
+           - /data/myredis/logs:/var/log/redis/
+
+        ports:
+         - "6379:6379"
+
+volumes:
+   myredis-logs:
+       external: true
+   myredis-data:
+       external: true

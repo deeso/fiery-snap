@@ -1,0 +1,220 @@
+[inputs.twitter-source]
+    name = 'twitter-source'
+    type = 'simple-in-twitter'
+    consumer_key = 'CREATE_TWITTER_DEV_ACCOUNT'
+    consumer_secret = 'CREATE_TWITTER_DEV_ACCOUNT'
+    access_token = 'CREATE_TWITTER_DEV_ACCOUNT'
+    access_token_secret = 'CREATE_TWITTER_DEV_ACCOUNT'
+    handles = [
+"0x009AD6_810", "Antelox", "Anti_Expl0it", "BlackBirdDr", "BleepinComputer",
+"BroadAnalysis", "CryptoInsane", "CyberCrimeWHQ", "DynamicAnalysis", "EKFiddle",
+"EKwatcher", "EndgameInc", "GossiTheDog", "JAMESWT_MHT", "James_inthe_box",
+"JaromirHorejsi", "Kafeine", "LockyBOT", "MalwareKiwi", "MalwareMuggle",
+"MalwareTechBlog", "Malwarebytes", "Malwared_", "Mesiagh", "MlwrHpstr",
+"PayloadSecurity", "PhysicalDrive0", "PraSuren_dra", "Racco42", "RempahRz",
+"Ring0x0", "SecGuru", "Seifreed", "Stormshield", "TalosSecurity",
+"TeMerc", "Unit42_Intel", "VK_Intel", "YouMayBeHacked", "Zerophage1337",
+"_jsoo_", "abuse_ch", "antonivanovm", "azsxdvfbg", "baberpervez2",
+"bad_packets", "bartblaze", "benkow_", "cyber_attacks", "danielhbohannon",
+"demonslay335", "dvk01uk", "executemalware", "hackerfactor", "hasherezade",
+"huntingmalware", "illegalFawn", "jeromesegura", "joshcannell", "jpcert",
+"kafeine", "killamjr", "malc0de", "malware000", "malware_traffic",
+"malwareforme", "malwareunicorn", "malwrhunterteam", "malwrmoustache", "mesa_matt",
+"msftmmpc", "mwtracker", "nao_sec", "peterkruse", "phishingalert", "ransomwareblog",
+"sS55752750", "snxperxero", "sourcefire", "syedkami70", "sysopfb",
+"teamcymru", "thlnk3r", "tmmalanalyst", "unmaskparasites",
+"w1mp1k1ng", "x0rz", "ydklijnsma"
+# too noisy
+# "threatintelctr", 
+]
+
+    [inputs.twitter-source.service]
+        name = 'twitter-source_service'
+        listening_port = 19003
+        listening_address = '0.0.0.0'
+
+    [inputs.twitter-source.subscribers.redis_queue]
+        name = 'raw_twitter_feed'
+        queue_name = "raw_twitter_feed"
+        uri = "redis://redis-queue-host:6379"
+        limit = 10000 # adjustable limit 10 posts per request for content
+
+    [inputs.twitter-source.subscribers.ms-raw-twitter]
+        name = 'ms-raw-twitter'
+        queue_name = "ms-raw-twitter"
+        uri = "redis://redis-queue-host:6379"
+        limit = 10000 # adjustable limit 10 posts per request for content
+
+[outputs.mongo-sink-raw]
+    uri = 'mongodb://mongodb-host:27017'
+    name = "mongo-sink-raw"
+    dbname = 'twitter-feeds'
+    colname = 'raw-tweets'
+    type = 'simple-mongo-store'
+    id_keys = ['tm_id']
+
+    [outputs.mongo-sink-raw.service]
+        name = 'mongo-sink-raw'
+        listening_port = 19004
+        listening_address = '0.0.0.0'
+
+    [outputs.mongo-sink-raw.publishers.ms-raw-twitter]
+        name = 'ms-raw-twitter'
+        queue_name = "ms-raw-twitter"
+        uri = "redis://redis-queue-host:6379"
+
+[outputs.mongo-sink-processed]
+    uri = 'mongodb://mongodb-host:27017'
+    name = "mongo-sink-processed"
+    dbname = 'twitter-feeds'
+    colname = 'processed-tweets'
+    type = 'simple-mongo-store'
+    id_keys = ['tm_id']
+
+    [outputs.mongo-sink-processed.service]
+        name = 'mongo-sink-processed'
+        listening_port = 19005
+        listening_address = '0.0.0.0'
+
+    [outputs.mongo-sink-processed.publishers.ms-processed-twitter]
+        name = 'ms-processed-twitter'
+        queue_name = "ms-processed-twitter"
+        uri = "redis://redis-queue-host:6379"
+
+[osint]
+    tags = [['adwind', '^adwind.*'],
+        ['afraid', '^afraid.*'],
+        ['afriad', '^afriad.*'],
+        ['angler', '^angler.*'],
+        ['arescrypt', '^arescrypt.*'],
+        ['bandarchore', '^bandarchore.*'],
+        ['cerber', '^cerber.*'],
+        ['chthonic', '^chthonic.*'],
+        ['crypmic', '^crypmic.*'],
+        ['cryptmic', '^cryptmic.*'],
+        ['cryptxxx', '^cryptxxx.*'],
+        ['dridex', '^dridex$'],
+        ['eitest', '^eitest.*'],
+        ['goodman', '^goodman.*'],
+        ['gootkit', '^gootkit.*'],
+        ['jbitfrost', '^jbitfrost.*'],
+        ['kaixin', '^kaixin.*'],
+        ['magnitude', '^magnitude.*'],
+        ['magnitudeek', '^magnitudeek.*'],
+        ['nebula', '^nebula.*'],
+        ['neurtrino', '^neurtrino.*'],
+        ['neutrino', '^neutrino.*'],
+        ['pseudo', '^pseudo.*'],
+        ['qbot', '^qbot.*'],
+        ['ramnit', '^ramnit.*'],
+        ['realstatistics', '^realstatistics.*'],
+        ['rig', '^rig.*'],
+        ['rulan', '^rulan.*'],
+        ['seamless', '^seamless.*'],
+        ['sundown', '^sundown.*'],
+        ['terror', '^terror.*'],
+        ['teslacrypt', '^teslacrypt.*'],
+        ['badrabbit', '^badrabbit.*'],
+        ['locky', '^locky.*'],
+        ['pandabanker', '^pandabankder.*'],
+        ['seamless', '^seamless'],
+        ['smokeloader', '^smokeloader.*'],
+        ['GENERIC_CryptTag', '^.*crypt']
+        ]
+    note_keywords_caseinsensitive = true
+    note_keywords = [['phishing', '.*phishing'],
+        ['url', '^url$'],
+        ['url', '^urls$'], 
+        ['domain', '^domain$'],
+        ['domain', '^domains$'],
+        ['control panel', '^[Cc]ontrol [Pp]anel$'],
+        ['exploitkit', '^ek'],
+        ['exploitkit', '^exploit kit$'], 
+        ['gate', '^gate$'],
+        ['malware', '^[Mm]alware$'],
+        ['spyware', '^spyware$'],
+        ['adware', '^[Aa]dware$'],
+        ['open directory', '^open directory$'],
+        ['ransomware', '$[Rr]ansomware'],
+        ['botnet', '$[Bb]otnet'],
+        ['black market', '$black market^'],
+        ['underground', '$[Uu]nderground^'],
+        ['rat', '.*[Rr][Aa][Tt]$'],
+        ['c2', '^[Cc]2$'],
+        ['c2', '^command and control$'],
+        ['maldoc?', '^doc$'],
+        ['email', '^email$'],
+        ['maldoc?', '^document$'],
+        ['maldoc', '^maldoc$'],
+        ['maldoc', '^malicious document$'],
+        ['powershell', '^powershell$'],
+        ['malware', '^sample$']]
+
+
+[processors.twitter-scraper]
+    name = 'twitter-scraper'
+    type = 'twitterscraper'
+    subscriber_polling = 10.0 # control the periods between polls
+    message_count = 100 # limit the number of messages processed at a time
+    simple_msg = "From:{source_type}:{source}->{processor}:{processor_type}\\n{safe_hosts} {tags}\\n(credit {user}: {link})"
+    grab_linked_content = true
+
+    [processors.twitter-scraper.service]
+        name = 'twitter-scraper-service'
+        listening_port = 19006
+        listening_address = '0.0.0.0'
+
+    [top-sites-check]
+        host = "top-sites-check"
+        port = 10006
+
+
+    [processors.twitter-scraper.publishers.raw_twitter_feed]
+        name = 'raw_twitter_feed'
+        queue_name = "raw_twitter_feed"
+        uri = "redis://redis-queue-host:6379"
+
+    [processors.twitter-scraper.subscribers.ms-processed-twitter]
+        name = 'ms-processed-twitter'
+        queue_name = "ms-processed-twitter"
+        uri = "redis://redis-queue-host:6379"
+
+    [processors.twitter-scraper.subscribers.local]
+        name = 'local'
+        uri = ""
+
+
+[outputs.twitterscraper-email-results]
+    name = "twitterscraper-email-results"
+    type = 'twitterscraper-email-results'
+    sleep_time = 43200.0
+    start_timestamp = "2017-12-06 00:00:00"
+
+    [outputs.twitterscraper-email-results.sender-details]
+        name = 'Fiery Snap Service'
+        subject = '[Fiery-Snap] Twitter Feed (10m updates)'
+        email = 'CREATE_EMAIL'
+        server = 'smtp.gmail.com'
+        port = 587
+        password = 'CREATE_PASSWORD'
+
+    [outputs.twitterscraper-email-results.recipients.adam-test4]
+        name = 'Adam Pridgen'
+        email = 'adam.pridgen.phd@gmail.com'
+
+    [outputs.twitterscraper-email-results.mongo-result-config]
+        uri = 'mongodb://mongodb-host:27017'
+        name = "ms-processed-twitter"
+        dbname = 'twitter-feeds'
+        colname = 'processed-tweets'
+
+    [outputs.twitterscraper-email-results.mongo-state-config]
+        uri = 'mongodb://mongodb-host:27017'
+        name = "mailer-state"
+        dbname = 'mailer-state'
+        colname = 'info'
+
+    [outputs.twitterscraper-email-results.service]
+        name = 'emailer-processed'
+        listening_port = 19007
+        listening_address = '0.0.0.0'

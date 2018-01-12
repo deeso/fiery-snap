@@ -1,0 +1,10 @@
+toml
+kombu
+redis
+validators
+web.py
+regex
+python-twitter
+bs4
+pymongo
+requests

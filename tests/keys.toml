@@ -1,0 +1,11 @@
+keys = [
+    'consumer_key',
+    'consumer_secret',
+    'access_token',
+    'access_token_secret'
+]
+
+consumer_key = ['TwitterSourceConfig',  'consumer_key', 'FILLIN']
+consumer_secret = ['TwitterSourceConfig',  'consumer_secret', 'FILLIN']
+access_token = ['TwitterSourceConfig',  'access_token', 'FILLIN']
+access_token_secret = ['TwitterSourceConfig',  'access_token_secret', 'FILLIN']
