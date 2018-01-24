@@ -1,5 +1,5 @@
 DOCKER_TAG=python27:latest
-DOCKER_NAME=twitter-scraper-email-results
+DOCKER_NAME=twitterscraper-email-results
 
 SERVICE=19007
 
