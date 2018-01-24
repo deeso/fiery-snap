@@ -54,32 +54,35 @@ class MongoFilterProcessor(BaseProcessor):
         for k,v in self.OPTIONAL_CONFIG_PARAMS:
             if k not in kargs:
                 setattr(self, k, v)
-            else:                
+            else:
                 setattr(self, k, kargs.get(k, None))
 
-        self.db_conn = MongoClientImpl(subscribers=self.subscribers,
+        self.db_conn = self.new_client()
+
+    def new_client(self):
+        return MongoClientImpl(subscribers=self.subscribers,
                                        publishers=self.publishers, 
                                        **kargs)
 
     def reset(self, dbname=None, colname=None):
         dbname = self.dbname if dbname is None else dbname
         colname = self.colname if colname is None else colname
-        return self.db_conn.reset(dbname=dbname, colname=colname)
+        return self.new_client().reset(dbname=dbname, colname=colname)
 
     def insert(self, content):
         dbname = self.dbname if dbname is None else dbname
         colname = self.colname if colname is None else colname
-        return self.db_conn.insert(content, dbname=dbname, colname=colname)
+        return self.new_client().insert(content, dbname=dbname, colname=colname)
 
     def insert_msg(self, msg):
         dbname = self.dbname if dbname is None else dbname
         colname = self.colname if colname is None else colname
-        return self.db_conn.insert_msg(msg, dbname=dbname, colname=colname)
+        return self.new_client().insert_msg(msg, dbname=dbname, colname=colname)
 
     def insert_msgs(self, msgs):
       r = []
       for m in msgs:
-          r.append(self.db_conn.insert_msg(m, dbname=self.dbname, colname=self.colname))
+          r.append(self.new_client().insert_msg(m, dbname=self.dbname, colname=self.colname))
       return r 
 
     def insert_unique_content(self, db, col, mongo_content):
@@ -96,7 +99,7 @@ class MongoFilterProcessor(BaseProcessor):
         return True, col.insert_one(sm).inserted_id
 
     def process_message(self, omessage):
-        return self.db_conn.insert_msg(omessage, dbname=self.dbname, colname=self.colname)
+        return self.new_client().insert_msg(omessage, dbname=self.dbname, colname=self.colname)
 
     def process_task(self, body, kombu_message):
         jsonmsg = json.loads(kombu_message.payload)
@@ -108,15 +111,15 @@ class MongoFilterProcessor(BaseProcessor):
     def get_all(self, dbname=None, colname=None, obj_dict={}):
         dbname = self.dbname if dbname is None else dbname
         colname = self.colname if colname is None else colname
-        return self.db_conn.get_all(dbname=dbname, colname=colname, obj_dict=obj_dict)
+        return self.new_client().get_all(dbname=dbname, colname=colname, obj_dict=obj_dict)
 
     def get_one(self, dbname=None, colname=None, obj_dict={}):
         dbname = self.config.get('dbname') if dbname is None else dbname
         colname = self.config.get('colname') if colname is None else colname
-        return self.db_conn.get_one(dbname=dbname, colname=colname, obj_dict=obj_dict)
+        return self.new_client().get_one(dbname=dbname, colname=colname, obj_dict=obj_dict)
 
     def has_obj(self, q_dict={}):
-        return self.db_conn.has_obj(obj_dict=q_dict)
+        return self.new_client().has_obj(obj_dict=q_dict)
 
     @classmethod
     def parse(cls, config_dict, **kargs):

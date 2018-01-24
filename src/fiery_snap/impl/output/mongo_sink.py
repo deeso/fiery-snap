@@ -44,7 +44,7 @@ class MongoStore(IOBase):
         dbname = self.config.get('dbname') if dbname is None else dbname
         colname = self.config.get('colname') if colname is None else colname
         logging.debug("resetting %s[%s]" % (dbname,colname))
-        return self.db_conn.reset(dbname=dbname, colname=colname)
+        return self.new_client().reset(dbname=dbname, colname=colname)
 
     def reset_all(self, dbname=None, colname=None):
         super(MongoStore, self).reset_all()
@@ -80,7 +80,7 @@ class MongoStore(IOBase):
         dbname = self.config['dbname']
         colname = self.config['colname']
         json_msgs = [i.as_json() for i in all_msgs]
-        self.db_conn.inserts(json_msgs, dbname, colname, update=update)
+        self.new_client().inserts(json_msgs, dbname, colname, update=update)
         logging.debug("Published %d msgs to %s[%s]" % (len(json_msgs), dbname, colname))
 
     def new_client(self):
@@ -90,14 +90,14 @@ class MongoStore(IOBase):
         results = super(MongoStore, self).is_empty()
         dbname = self.config.get('dbname') if dbname is None else dbname
         colname = self.config.get('colname') if colname is None else colname
-        is_empty = self.db_conn.is_empty(dbname=dbname, colname=colname)
+        is_empty = self.new_client().is_empty(dbname=dbname, colname=colname)
         results.update({'%s[%s]'%(dbname, colname): is_empty})
         return results
 
     def is_db_empty(self, dbname=None, colname=None):
         dbname = self.config.get('dbname') if dbname is None else dbname
         colname = self.config.get('colname') if colname is None else colname
-        is_empty = self.db_conn.is_empty(dbname=dbname, colname=colname)
+        is_empty = self.new_client().is_empty(dbname=dbname, colname=colname)
         return {'%s[%s]'%(dbname, colname): is_empty}
 
     def handle(self, path, data):
@@ -118,7 +118,7 @@ class MongoStore(IOBase):
             query = data.get('query', {})
             dbname = data.get('dbname', self.config['dbname'])
             colname = data.get('colname', self.config['colname'])
-            results = self.db_conn.get_all(dbname=dbname, colname=colname, obj_dict=query)
+            results = self.new_client().get_all(dbname=dbname, colname=colname, obj_dict=query)
             if results is None:
                 return {}
 
@@ -146,7 +146,7 @@ class MongoStore(IOBase):
                 colname = self.config['colname']
                 return {'msg': 'queued %d messages for publication to %s[%s]' % (len(entries), dbname, colname)}
             else:
-                results = self.db_conn.inserts(entries, dbname, colname, update=update)
+                results = self.new_client().inserts(entries, dbname, colname, update=update)
                 return {'msg': 'Consumed messages and put them in %s[%s]' % (dbname, colname)}
 
         return {'error': 'unable to handle message type: %s' % path}
