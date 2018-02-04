@@ -4,32 +4,22 @@ from fiery_snap.impl.util.page import Page, AddHandlesPage, \
 
 from fiery_snap.io.io_base import IOBase
 from fiery_snap.io.message import Message
-from fiery_snap.utils import parsedate_to_datetime
 
-
+from simple_pastebin_client.api import PasteBinApiClient
 from datetime import datetime
 import json
-from twitter import Api
 import logging
 import traceback
 
 
-class TwitterClientImpl(object):
-    TWT_FMT = 'https://twitter.com/{}/status/{}'
-    URL_LOC = 'https://t.co'
-    REQUIRED_CONFIG_PARAMS = ['consumer_key', 'consumer_secret',
-                              'access_token', 'access_token_secret',
-                              'handle', 'name']
-    OPTIONAL_CONFIG_PARAMS = [['sleep_on_rate_limit', True],
-                              ['last_id', None],
-                              ['ignore_rts', True],
-                              ['content', 'text'],
+class PastebinClientImpl(object):
+    REQUIRED_CONFIG_PARAMS = ['handle', 'name']
+    OPTIONAL_CONFIG_PARAMS = [['sleep_time', 60],
+                              ['last_ts', None],
+                              ['content', 'data'],
                               ['limit', 10], ]
 
     def __init__(self, **kargs):
-        self.api = None
-        self.last_id = None
-        self.ignore_rts = True
 
         for k in self.REQUIRED_CONFIG_PARAMS:
             setattr(self, k, kargs.get(k))
@@ -37,92 +27,64 @@ class TwitterClientImpl(object):
         for k, v in self.OPTIONAL_CONFIG_PARAMS:
             setattr(self, k, kargs.get(k, v))
 
-        # print "lastid= %s" % str(self.last_id)
+        # print "lastid= %s" % str(self.last_ts)
 
     def consume(self):
-
-        _handle = self.handle if self.handle[0] == '@' else '@'+self.handle
         msgs = []
-        tweets = []
-        keep_going = False
-        m = 'Failed to retrieve posts with the following exception:\n{}'
-        try:
-            keep_going = self.test_source()
-        except:
-            logging.debug(m.format(traceback.format_exc()))
-            try:
-                if self.api is not None:
-                    self.api = None
-                    keep_going = self.test_source()
-            except:
-                logging.debug(m.format(traceback.format_exc()))
-
-        if not keep_going:
-            return msgs
+        pastes = []
 
         try:
-            tweets = self.api.GetUserTimeline(screen_name=_handle,
-                                              count=self.limit,
-                                              since_id=self.last_id)
+            pastes = PasteBinApiClient.user_pastes_data(self.handle,
+                                                        do_all=True,
+                                                        after_ts=self.last_ts)
         except:
-            m = 'Failed to retrieve posts with the following exception:\n{}'
-            logging.debug(m.format(traceback.format_exc()))
+            e = traceback.format_exc()
+            m = 'Failed to retrieve pastes with the following exception:\n{}'
+            logging.debug(m.format(e))
 
-        for p in tweets:
+        for p in pastes:
             js = {}
-            if p.text.startswith('RT') and self.ignore_rts:
-                # Ignore retweets
-                continue
 
-            if self.last_id is None or \
-               long(p.id) > long(self.last_id):
-                self.last_id = str(p.id)
+            if self.last_ts is None or \
+               long(p['unix']) > long(self.last_ts):
+                self.last_ts = str(p['unix'])
 
-            js['meta'] = p.AsDict()
-            js['tm_id'] = js['meta']['id']
-
-            js['references'] = [self.TWT_FMT.format(self.handle, p.id), ]
-            js['link'] = self.TWT_FMT.format(self.handle, p.id)
-            js['timestamp'] = parsedate_to_datetime(p.created_at)
-            n = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            js['meta'] = p
+            js['p_id'] = p['paste_key']
+            js['link'] = p['paste']
+            js['timestamp'] = p['timestamp']
+            n = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
             js['obtained_timestamp'] = n
             if self.content is None or self.content not in js['meta']:
-                js['content'] = json.dumps(p.AsDict())
+                js['content'] = json.dumps(p)
                 js['forced_content'] = True
                 # \/ for internal debugging (this does not JSON dump)
                 # js['raw'] = p
             else:
-                js['content'] = getattr(p, self.content)
+                js['content'] = p['data']
                 # \/ for internal debugging (this does not JSON dump)
                 js['forced_content'] = False
 
             js['source'] = self.name
-            js['source_type'] = 'twitter'
-            js['user'] = self.handle.strip('@')
+            js['source_type'] = 'pastebin'
+            js['user'] = self.handle
             msgs.append(Message(js))
         return msgs
 
     def test_source(self):
-        if self.api is None:
-            w = self.sleep_on_rate_limit
-            self.api = Api(self.consumer_key,
-                           self.consumer_secret,
-                           self.access_token,
-                           self.access_token_secret,
-                           sleep_on_rate_limit=w)
-        if self.api is None:
-            raise Exception("Unable to connect to twitter")
-        return self.api.VerifyCredentials()
+        try:
+            PasteBinApiClient.user_pastes_data(self.handle, do_all=False)
+        except:
+            m = "Unable to connect to pastebin with %s" % self.handle
+            raise Exception(m)
+        return True
 
 
 class TwitterSource(IOBase):
-    KEY = 'simple-in-twitter'
-    REQUIRED_CONFIG_PARAMS = ['name', 'consumer_key', 'consumer_secret',
-                              'access_token', 'access_token_secret',
-                              'handles', 'subscribers']
-    OPTIONAL_CONFIG_PARAMS = [['sleep_on_rate_limit', True],
-                              ['last_ids', {}],
-                              ['listening_port', 20202],
+    KEY = 'simple-in-pastebin'
+    REQUIRED_CONFIG_PARAMS = ['name', 'handles', 'subscribers']
+    OPTIONAL_CONFIG_PARAMS = [['last_tss', {}],
+                              ['listening_port', 20209],
                               ['listening_address', ''],
                               ['sleep_time', 30.0],
                               ]
@@ -133,14 +95,14 @@ class TwitterSource(IOBase):
                  ConsumePage]
         IOBase.__init__(self, config_dict, pages=pages)
         self.output_queue = []
-        rs = self.random_name(prepend='twitter-input')
+        rs = self.random_name(prepend='pastebin-input')
         self.name = self.config.get('name', rs)
-        last_ids = self.config.get('last_ids', {})
+        last_tss = self.config.get('last_tss', {})
         for h in self.config.get('handles', []):
-            if h not in last_ids:
-                last_ids[h] = None
+            if h not in last_tss:
+                last_tss[h] = None
 
-        self.config['last_ids'] = last_ids
+        self.config['last_tss'] = last_tss
 
     @classmethod
     def parse(cls, block, **kargs):
@@ -162,8 +124,8 @@ class TwitterSource(IOBase):
 
             if len(messages) > 0:
                 self.publish_all_msgs(messages)
-            m = 'published %d messages in the queue'
-            return {'msg': m % len(messages)}
+            m = 'published %d messages in the queue' % len(messages)
+            return {'msg': m}
 
         if path == RemoveHandlesPage.NAME:
             handles = []
@@ -192,12 +154,11 @@ class TwitterSource(IOBase):
         elif path == ConsumePage.NAME:
             return_posts = 'return_posts' in data
             msg_posts = self.consume_and_publish()
-            all_posts = [i.toJSON() for i in msg_posts]
-            num_posts = len(all_posts)
-            r = {'msg': 'Consumed %d posts' % num_posts,
-                 'all_posts': all_posts}
+            all_pastes = [i.toJSON() for i in msg_posts]
+            num_posts = len(all_pastes)
+            r = {'msg': 'Consumed %d posts' % num_posts, 'all_pastes': None}
             if return_posts:
-                r['all_posts'] = all_posts
+                r['all_pastes'] = all_pastes
             return r
         return {'error': 'unable to handle message type: %s' % path}
 
@@ -228,55 +189,55 @@ class TwitterSource(IOBase):
         self.config.get('handles', handles)
         return handles
 
-    def get_last_id(self, handle):
-        last_ids = self.config['last_ids']
-        return last_ids[handle] if handle in last_ids else None
+    def get_last_ts(self, handle):
+        last_tss = self.config['last_tss']
+        return last_tss[handle] if handle in last_tss else None
 
-    def set_last_id(self, handle, last_id):
-        last_ids = self.config['last_ids']
-        last_ids[handle] = last_id
+    def set_last_ts(self, handle, last_ts):
+        last_tss = self.config['last_tss']
+        last_tss[handle] = last_ts
 
     def consume(self):
-        all_posts = {}
+        all_pastes = {}
 
         for handle in self.config.get('handles', []):
-            last_id = self.get_last_id(handle)
+            last_ts = self.get_last_ts(handle)
             # TODO convert to event based consumption
-            tc = self.new_client(handle, last_id)
+            tc = self.new_client(handle, last_ts)
             logging.debug("Consuming posts from: %s" % handle)
             posts = tc.consume()
-            all_posts[handle] = posts
-            self.set_last_id(handle, tc.last_id)
+            all_pastes[handle] = posts
+            self.set_last_ts(handle, tc.last_ts)
 
-        return all_posts
+        return all_pastes
 
     def consume_publish_lockstep(self):
-        all_posts = {}
+        all_pastes = {}
 
         for handle in self.config.get('handles', []):
-            last_id = self.get_last_id(handle)
+            last_ts = self.get_last_ts(handle)
             # TODO convert to event based consumption
-            tc = self.new_client(handle, last_id)
+            tc = self.new_client(handle, last_ts)
             logging.debug("Consuming posts from: %s" % handle)
             posts = tc.consume()
-            all_posts[handle] = posts
-            self.set_last_id(handle, tc.last_id)
-            self.publish_all_posts({'handle': all_posts[handle]})
-        return all_posts
+            all_pastes[handle] = posts
+            self.set_last_ts(handle, tc.last_ts)
+            self.publish_all_pastes({'handle': all_pastes[handle]})
+        return all_pastes
 
     def consume_and_publish(self, msg_queue_only=False):
         # Preference should be to do the consume and publish in lockstep
         # since Twitter may rate limit, but we want to hold our place in
-        # tweets reviewed
-        # all_posts = self.consume()
-        # return self.publish_all_posts(all_posts)
+        # pastes reviewed
+        # all_pastes = self.consume()
+        # return self.publish_all_pastes(all_pastes)
         return self.consume_publish_lockstep()
 
-    def publish_all_posts(self, all_posts):
+    def publish_all_pastes(self, all_pastes):
         msgs = []
-        for handle, posts in all_posts.items():
-            m = "Publishing msgs %d msgs from %s"
-            logging.debug(m % (len(posts), handle))
+        for handle, posts in all_pastes.items():
+            m = "Publishing msgs %d msgs from %s" % (len(posts), handle)
+            logging.debug(m)
             for msg in posts:
                 msgs.append(msg)
 
@@ -284,5 +245,7 @@ class TwitterSource(IOBase):
         logging.debug("Published %d msgs to all subscribers" % (len(msgs)))
         return msgs
 
-    def new_client(self, handle, last_id):
-        return TwitterClientImpl(handle=handle, last_id=last_id, **self.config)
+    def new_client(self, handle, last_ts):
+        return PastebinClientImpl(handle=handle,
+                                  last_ts=last_ts,
+                                  **self.config)

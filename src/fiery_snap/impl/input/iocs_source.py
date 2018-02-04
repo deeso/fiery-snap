@@ -1,6 +1,10 @@
 import base64
+from fiery_snap.io.io_base import IOBase
+from fiery_snap.io.connections import *
 from fiery_snap.impl.util.htmlparser_bs4 import ContentHandler
 from fiery_snap.impl.input.kombu_source import KombuClientProducer
+from fiery_snap.impl.util.page import JsonUploadPage, TestPage
+
 
 class DomainSource(KombuClientProducer):
     KEY = 'domain-source'
@@ -13,18 +17,17 @@ class DomainSource(KombuClientProducer):
                 domains.append(domain)
 
             source = data.get('source', 'json_upload')
-            sourcetype = data.get('source_type', 'upload_service')
+            source_type = data.get('source_type', 'upload_service')
             messages = []
             t = 'domain'
             for v in domains:
                 msg = {
                         'source': source,
                         'source_type': source_type,
-                        'value': v, 
+                        'value': v,
                         'type': t
                      }
                 messages.append(msg)
-
 
             if len(messages) > 0:
                 self.publish_all_msgs(messages)
@@ -34,21 +37,20 @@ class DomainSource(KombuClientProducer):
 
 class HostSource(KombuClientProducer):
     KEY = 'host-source'
-    REQUIRED_CONFIG_PARAMS = ['name', 
+    REQUIRED_CONFIG_PARAMS = ['name',
                               'uri',
                               'queue_name',
                               'publishers',
                               'subscribers',
-]
+                              ]
     OPTIONAL_CONFIG_PARAMS = []
 
     def __init__(self, config_dict, **kargs):
         IOBase.__init__(self, config_dict, pages=[JsonUploadPage, TestPage])
-        self.my_queue = KombuPubSubConnection(config_dict.get('name'), 
-                                              config_dict.get('uri'), 
-                                              config_dict.get('queue_name'), 
+        self.my_queue = KombuPubSubConnection(config_dict.get('name'),
+                                              config_dict.get('uri'),
+                                              config_dict.get('queue_name'),
                                               iobase=self)
-
 
     def handle(self, path, data):
         if path == JsonUploadPage.NAME:
@@ -61,15 +63,15 @@ class HostSource(KombuClientProducer):
             ip = data.get('ip', None)
             if ip is not None or len(ip) > 0:
                 ips.append(ip)
-            
+
             source = data.get('source', 'json_upload')
-            sourcetype = data.get('source_type', 'upload_service')
+            source_type = data.get('source_type', 'upload_service')
             t = 'domain'
             for v in domains:
                 msg = {
                         'source': source,
                         'source_type': source_type,
-                        'value': v, 
+                        'value': v,
                         'type': t
                      }
                 messages.append(msg)
@@ -80,7 +82,7 @@ class HostSource(KombuClientProducer):
                         'source': source,
                         'source_type': source_type,
                         'value': v,
-                        'type': t 
+                        'type': t
                      }
                 messages.append(msg)
 
@@ -89,9 +91,10 @@ class HostSource(KombuClientProducer):
             return {'msg': 'published %d messages in the queue'}
         return {'error': 'unable to handle message type: %s' % path}
 
+
 class IpSource(KombuClientProducer):
     KEY = 'ip-source'
-    REQUIRED_CONFIG_PARAMS = ['name', 
+    REQUIRED_CONFIG_PARAMS = ['name',
                               'uri',
                               'queue_name',
                               'publishers',
@@ -100,11 +103,10 @@ class IpSource(KombuClientProducer):
 
     def __init__(self, config_dict, **kargs):
         IOBase.__init__(self, config_dict, pages=[JsonUploadPage, TestPage])
-        self.my_queue = KombuPubSubConnection(config_dict.get('name'), 
-                                              config_dict.get('uri'), 
-                                              config_dict.get('queue_name'), 
+        self.my_queue = KombuPubSubConnection(config_dict.get('name'),
+                                              config_dict.get('uri'),
+                                              config_dict.get('queue_name'),
                                               iobase=self)
-
 
     def handle(self, path, data):
         if path == JsonUploadPage.NAME:
@@ -117,16 +119,16 @@ class IpSource(KombuClientProducer):
             ip = data.get('ip', None)
             if ip is not None or len(ip) > 0:
                 ips.append(ip)
-            
+
             source = data.get('source', 'json_upload')
-            sourcetype = data.get('source_type', 'upload_service')
+            source_type = data.get('source_type', 'upload_service')
             t = 'ip'
             for v in ips:
                 msg = {
                         'source': source,
                         'source_type': source_type,
                         'value': v,
-                        'type': t 
+                        'type': t
                      }
                 messages.append(msg)
 
@@ -135,9 +137,10 @@ class IpSource(KombuClientProducer):
             return {'msg': 'published %d messages in the queue'}
         return {'error': 'unable to handle message type: %s' % path}
 
+
 class HashSource(KombuClientProducer):
     KEY = 'hash-source'
-    REQUIRED_CONFIG_PARAMS = ['name', 
+    REQUIRED_CONFIG_PARAMS = ['name',
                               'uri',
                               'queue_name',
                               'publishers',
@@ -146,11 +149,10 @@ class HashSource(KombuClientProducer):
 
     def __init__(self, config_dict, **kargs):
         IOBase.__init__(self, config_dict, pages=[JsonUploadPage, TestPage])
-        self.my_queue = KombuPubSubConnection(config_dict.get('name'), 
-                                              config_dict.get('uri'), 
-                                              config_dict.get('queue_name'), 
+        self.my_queue = KombuPubSubConnection(config_dict.get('name'),
+                                              config_dict.get('uri'),
+                                              config_dict.get('queue_name'),
                                               iobase=self)
-
 
     def handle(self, path, data):
         if path == JsonUploadPage.NAME:
@@ -158,16 +160,16 @@ class HashSource(KombuClientProducer):
             hash_ = data.get('hash', None)
             if hash_ is not None or len(hash_) > 0:
                 hashes.append(hash_)
-          
+
             source = data.get('source', 'json_upload')
-            sourcetype = data.get('source_type', 'upload_service')
+            source_type = data.get('source_type', 'upload_service')
             t = 'hashes'
             for v in hashes:
                 msg = {
                         'source': source,
                         'source_type': source_type,
                         'value': v,
-                        'type': t 
+                        'type': t
                      }
                 messages.append(msg)
 
@@ -179,20 +181,19 @@ class HashSource(KombuClientProducer):
 
 class HtmlSource(KombuClientProducer):
     KEY = 'html-source'
-    REQUIRED_CONFIG_PARAMS = ['name', 
+    REQUIRED_CONFIG_PARAMS = ['name',
                               'uri',
                               'queue_name',
                               'publishers',
-                              'subscribers',]
+                              'subscribers', ]
     OPTIONAL_CONFIG_PARAMS = []
 
     def __init__(self, config_dict, **kargs):
         IOBase.__init__(self, config_dict, pages=[JsonUploadPage, TestPage])
-        self.my_queue = KombuPubSubConnection(config_dict.get('name'), 
-                                              config_dict.get('uri'), 
-                                              config_dict.get('queue_name'), 
+        self.my_queue = KombuPubSubConnection(config_dict.get('name'),
+                                              config_dict.get('uri'),
+                                              config_dict.get('queue_name'),
                                               iobase=self)
-
 
     def handle(self, path, data):
         if path == JsonUploadPage.NAME:
@@ -200,9 +201,9 @@ class HtmlSource(KombuClientProducer):
             url = data.get('url', None)
             if url is not None or len(url) > 0:
                 urls.append(url)
-          
+
             source = data.get('source', 'json_upload')
-            sourcetype = data.get('source_type', 'upload_service')
+            source_type = data.get('source_type', 'upload_service')
             t = 'urls'
             for v in hashes:
                 msg = {
@@ -216,12 +217,13 @@ class HtmlSource(KombuClientProducer):
                         'content_url': None,
                      }
                 try:
-                  ch = ContentHandler(link=v)
-                  msg['html_b64'] = base64.encodestring(ch.content).replace('\n', '')
-                  msg['expanded_link'] = ch.expanded_link
-                  msg['content_url'] = ch.link
+                    ch = ContentHandler(link=v)
+                    k = base64.encodestring(ch.content).replace('\n', '')
+                    msg['html_b64'] = k
+                    msg['expanded_link'] = ch.expanded_link
+                    msg['content_url'] = ch.link
                 except:
-                  msg['error'] = "Failed to retrieve content"
+                    msg['error'] = "Failed to retrieve content"
 
                 messages.append(msg)
 

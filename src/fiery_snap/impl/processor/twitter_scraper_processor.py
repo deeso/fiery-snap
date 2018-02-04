@@ -21,11 +21,11 @@ DOMAINS = 'domains'
 
 NOTE_KEYWORDS = [['phishing', '.*phishing'],
                  ['url', '^url$'],
-                 ['url', '^urls$'], 
+                 ['url', '^urls$'],
                  ['domain', '^domain$'],
                  ['domain', '^domains$'],
                  ['exploitkit', '^ek'],
-                 ['exploitkit', '^exploit kit$'], 
+                 ['exploitkit', '^exploit kit$'],
                  ['gate', '^gate$'],
                  ['malware', '^malware$']]
 
