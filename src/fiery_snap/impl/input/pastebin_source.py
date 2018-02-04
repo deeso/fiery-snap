@@ -80,7 +80,7 @@ class PastebinClientImpl(object):
         return True
 
 
-class TwitterSource(IOBase):
+class PastebinSource(IOBase):
     KEY = 'simple-in-pastebin'
     REQUIRED_CONFIG_PARAMS = ['name', 'handles', 'subscribers']
     OPTIONAL_CONFIG_PARAMS = [['last_tss', {}],
