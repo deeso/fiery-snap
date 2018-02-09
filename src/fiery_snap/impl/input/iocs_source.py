@@ -1,7 +1,7 @@
 import base64
 from fiery_snap.io.io_base import IOBase
 from fiery_snap.io.connections import *
-from fiery_snap.impl.util.htmlparser_bs4 import ContentHandler
+from ioc_regex.basic_html_extractor import ContentHandler as CH
 from fiery_snap.impl.input.kombu_source import KombuClientProducer
 from fiery_snap.impl.util.page import JsonUploadPage, TestPage
 

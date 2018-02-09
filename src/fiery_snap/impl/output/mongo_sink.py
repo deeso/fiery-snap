@@ -1,18 +1,11 @@
-from fiery_snap.impl.util.page import Page, AddHandlesPage, \
-               ListHandlesPage, RemoveHandlesPage, ConsumePage, \
+from fiery_snap.impl.util.page import ConsumePage, \
                JsonUploadPage, TestPage, MongoSearchPage
 
 from fiery_snap.io.io_base import IOBase
 from fiery_snap.io.message import Message
-from fiery_snap.utils import parsedate_to_datetime
 from fiery_snap.impl.util.mongo_client_impl import MongoClientImpl
-import threading
-import web
-import json
-from pymongo import MongoClient
 import logging
-import sys
-import time
+
 
 class MongoStore(IOBase):
     KEY = 'simple-mongo-store'
@@ -43,7 +36,7 @@ class MongoStore(IOBase):
     def reset(self, dbname=None, colname=None):
         dbname = self.config.get('dbname') if dbname is None else dbname
         colname = self.config.get('colname') if colname is None else colname
-        logging.debug("resetting %s[%s]" % (dbname,colname))
+        logging.debug("resetting %s[%s]" % (dbname, colname))
         return self.new_client().reset(dbname=dbname, colname=colname)
 
     def reset_all(self, dbname=None, colname=None):
@@ -56,18 +49,19 @@ class MongoStore(IOBase):
         messages = []
         #  conn == ..io.connection.Connection
         for name, conn in self.publishers.items():
-            pos = 0
-            logging.debug("Attempting to consume from: type(conn)=%s" % type(conn))
+            _m = "Attempting to consume from: type(conn)=%s" % type(conn)
+            logging.debug(_m)
             msgs = conn.consume(cnt=cnt)
             if msgs is None or len(msgs) == 0:
                 continue
 
-            # logging.debug("Retrieved %d messages from the %s queue" % (len(msgs), name))
-            logging.debug("Adding messages to the internal queue" )
+            logging.debug("Adding messages to the internal queue")
             for m in msgs:
                 if not self.add_incoming_message(m):
-                    logging.debug("Failed to add message to queue" )
-        return msgs
+                    logging.debug("Failed to add message to queue")
+                    continue
+                messages.append(m)
+        return messages
 
     def consume_and_publish(self):
         self.consume(-1)
@@ -76,12 +70,12 @@ class MongoStore(IOBase):
         return all_msgs
 
     def publish_all_messages(self, all_msgs, update=True):
-        cnt = 0
         dbname = self.config['dbname']
         colname = self.config['colname']
         json_msgs = [i.as_json() for i in all_msgs]
         self.new_client().inserts(json_msgs, dbname, colname, update=update)
-        logging.debug("Published %d msgs to %s[%s]" % (len(json_msgs), dbname, colname))
+        _m = "Published %d msgs to %s[%s]" % (len(json_msgs), dbname, colname)
+        logging.debug(_m)
 
     def new_client(self):
         return MongoClientImpl(**self.config)
@@ -91,16 +85,17 @@ class MongoStore(IOBase):
         dbname = self.config.get('dbname') if dbname is None else dbname
         colname = self.config.get('colname') if colname is None else colname
         is_empty = self.new_client().is_empty(dbname=dbname, colname=colname)
-        results.update({'%s[%s]'%(dbname, colname): is_empty})
+        results.update({'%s[%s]' % (dbname, colname): is_empty})
         return results
 
     def is_db_empty(self, dbname=None, colname=None):
         dbname = self.config.get('dbname') if dbname is None else dbname
         colname = self.config.get('colname') if colname is None else colname
         is_empty = self.new_client().is_empty(dbname=dbname, colname=colname)
-        return {'%s[%s]'%(dbname, colname): is_empty}
+        return {'%s[%s]' % (dbname, colname): is_empty}
 
     def handle(self, path, data):
+        nc = self.new_client()
         logging.debug("handling request (%s)" % (path))
         if path == TestPage.NAME:
             return {'msg': 'success'}
@@ -109,16 +104,18 @@ class MongoStore(IOBase):
             msg_posts = self.consume_and_publish()
             all_posts = [i.toJSON() for i in msg_posts]
             num_posts = len(all_posts)
-            r = {'msg': 'Consumed %d posts'%num_posts, 'all_posts':None}
+            r = {'msg': 'Consumed %d posts' % num_posts, 'all_posts': None}
             if return_posts:
-                r['all_posts']= all_posts
+                r['all_posts'] = all_posts
             return r
             return {'msg': 'completed a consume cycle'}
         elif path == MongoSearchPage.NAME:
             query = data.get('query', {})
             dbname = data.get('dbname', self.config['dbname'])
             colname = data.get('colname', self.config['colname'])
-            results = self.new_client().get_all(dbname=dbname, colname=colname, obj_dict=query)
+            results = nc.get_all(dbname=dbname,
+                                 colname=colname,
+                                 obj_dict=query)
             if results is None:
                 return {}
 
@@ -142,11 +139,16 @@ class MongoStore(IOBase):
                 for e in entries:
                     m = Message(e)
                     self.add_incoming_message(m)
+                    messages.append(m)
                 dbname = self.config['dbname']
                 colname = self.config['colname']
-                return {'msg': 'queued %d messages for publication to %s[%s]' % (len(entries), dbname, colname)}
+                _t = (len(entries), dbname, colname)
+                _m = 'queued %d messages for publication to %s[%s]' % _t
+                return {'msg': _m}
             else:
-                results = self.new_client().inserts(entries, dbname, colname, update=update)
-                return {'msg': 'Consumed messages and put them in %s[%s]' % (dbname, colname)}
+                results = nc.inserts(entries, dbname, colname, update=update)
+                _t = (dbname, colname)
+                _m = 'Consumed messages and put them in %s[%s]' % _t
+                return {'msg': _m}
 
         return {'error': 'unable to handle message type: %s' % path}

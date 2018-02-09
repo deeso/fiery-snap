@@ -4,25 +4,37 @@ from fiery_snap.impl.util.page import ConsumePage, \
 from fiery_snap.io.io_base import IOBase
 from fiery_snap.impl.util.simplified_email import SendEmail
 from fiery_snap.impl.util.mongo_client_impl import MongoClientImpl
-from ioc_regex import consts
 import logging
 
-TWTR_URL = u"https://twitter.com/i/web/status/"
+PBIN_URL = u"https://pastebin.com/raw/{}"
+TAGS = 'tags'
+KEYWORDS = 'keywords'
+HASHES = 'hashes'
+DOMAINS = 'domains'
+EMAILS = 'emails'
+URLS = 'urls'
+PURLS = 'pot_urls'
+IPS = 'ips'
 CONTENT_ARTIFACTS = 'content_artifacts'
 
+DF_DOMAINS = 'defanged_domains'
+DF_EMAILS = 'defanged_emails'
+DF_URLS = 'defanged_links'
+DF_IPS = 'defanged_ips'
+DF_LINKS = DF_URLS
 
-REPORT_ITEMS = [consts.HASHES, consts.DOMAIN, consts.EMAIL, consts.URL, consts.URL, consts.IP]
+REPORT_ITEMS = [HASHES, DOMAINS, EMAILS, URLS, PURLS, IPS, CONTENT_ARTIFACTS]
 
 
-class TwitterScraperEmailUpdates(IOBase):
-    KEY = 'twitterscraper-email-results'
+class PastebinScraperEmailUpdates(IOBase):
+    KEY = 'pastebinscraper-email-results'
     DEFAULT_DB = 'mailer-state'
     DEFAULT_COLLECTION = 'info'
     MONGO_URI = 'mongodb://0.0.0.0:27017'
     EMAILER_STATE_DBNAME = 'email'
     EMAILER_STATE_COLNAME = 'state'
-    EMAILER_SUBJECT = '[Fiery-Snap] Twitter Feed Results'
-    MONGO_RESULT_DBNAME = 'twitter-feeds'
+    EMAILER_SUBJECT = '[Fiery-Snap] Pastebin Feed Results'
+    MONGO_RESULT_DBNAME = 'pastebin-feeds'
     MONGO_RESULT_COLNAME = 'processed-tweets'
     MONGO_STATE_DBNAME = 'emailer'
     MONGO_STATE_COLNAME = 'state'
@@ -53,7 +65,7 @@ class TwitterScraperEmailUpdates(IOBase):
     def __init__(self, config_dict, add_local=False):
         pages = [TestPage, JsonUploadPage,
                  MongoSearchPage, ConsumePage, EmailInfoPage]
-        super(TwitterScraperEmailUpdates, self).__init__(config_dict, pages=pages)
+        super(PastebinScraperEmailUpdates, self).__init__(config_dict, pages=pages)
         self.output_queue = []
         rs = self.random_name(prepend=self.key)
         self.name = self.config.get('name', rs)
@@ -279,18 +291,13 @@ class TwitterScraperEmailUpdates(IOBase):
         reports_by_user = {}
         for r in results:
             tm_id = r['tm_id']
-            entities = r['entities']
-            tags = r['tags']
-            htags = entities[consts.HASH_TAG]
-            keywords = entities[consts.KEYWORDS]
-
+            tags = r[TAGS]
+            keywords = r[KEYWORDS]
             reports = self.update_with_defanged_entities_content(r, tm_id, reports)
             user = reports[tm_id]['user']
             if user not in reports_by_user:
                 reports_by_user[user] = {}
-            n_rec = {consts.KEYWORDS: keywords,
-                     consts.HASH_TAG: htags,
-                     'tags': tags, }
+            n_rec = {KEYWORDS: keywords, TAGS: tags}
             reports_by_user[user][tm_id] = n_rec
             for k, v in reports[tm_id].items():
                 if k == 'user':
@@ -300,29 +307,29 @@ class TwitterScraperEmailUpdates(IOBase):
 
     def extract_linked_content(self, record, tm_id, reports):
         linked_content = record['linked_content']
-        _df_domains = linked_content[consts.DF_DOMAIN]
-        _df_ips = linked_content[consts.DF_IP]
-        _df_urls = linked_content[consts.DF_URL]
-        domains = reports[tm_id][consts.DF_DOMAIN] + _df_domains
-        reports[tm_id][consts.DF_DOMAIN] = domains
-        reports[tm_id][consts.DF_URL] = reports[tm_id][consts.DF_URL] + _df_urls
-        reports[tm_id][consts.DF_IP] = reports[tm_id][consts.DF_IP] + _df_ips
+        for ci in linked_content:
+            if CONTENT_ARTIFACTS not in ci:
+                continue
+            _df_domains = ci[CONTENT_ARTIFACTS][DF_DOMAINS]
+            _df_ips = ci[CONTENT_ARTIFACTS][DF_IPS]
+            _df_links = ci[CONTENT_ARTIFACTS][DF_LINKS]
+            reports[tm_id][DOMAINS] = reports[tm_id][DOMAINS] + _df_domains
+            reports[tm_id][URLS] = reports[tm_id][URLS] + _df_links
+            reports[tm_id][IPS] = reports[tm_id][IPS] + _df_ips
         return reports
 
     def extract_entity_item(self, item_name, record, tm_id, reports):
         r = record
+        e = r['defanged_entities']
         e2 = r['entities']
-        items = e2.get(item_name, [])
+        items = e.get(item_name, []) + e2.get(item_name, [])
         items = sorted(set(items))
         reports[tm_id][item_name] = items
         return reports
 
     def update_with_defanged_entities_content(self, record, tm_id, reports):
         r = record
-        items = [consts.HASHES, consts.DOMAIN,
-                 consts.EMAIL, consts.URL, consts.IP,
-                 consts.DF_DOMAIN,
-                 consts.DF_EMAIL, consts.DF_URL, consts.DF_IP]
+        items = [HASHES, DOMAINS, EMAILS, URLS, IPS]
         reports[tm_id] = dict([(i, {}) for i in items])
         reports[tm_id]['content'] = r['content']
         reports[tm_id]['user'] = r['user']
@@ -330,19 +337,8 @@ class TwitterScraperEmailUpdates(IOBase):
         reports[tm_id]['timestamp'] = r.get('timestamp', '')
 
         for item_name in items:
-            reports = self.extract_entity_item(item_name,
-                                               record,
-                                               tm_id,
-                                               reports)
-        reports = self.extract_linked_content(record, tm_id, reports)
-        reports = self.filter_twitter_urls(record, tm_id, reports)
-        return reports
+            reports = self.extract_entity_item(item_name, record, tm_id, reports)
 
-    def filter_twitter_urls(self, record, tm_id, reports):
-        v = [i for i in reports[tm_id][consts.URL] if i.strip().find('://t.co/')]
-        # v = [i for i in v if i.strip().find('https://t.co/') != 0]
-        # v = [i for i in v if i.strip().find('http://t.co/') != 0]
-        reports[tm_id][consts.URL] = sorted(v)
         return reports
 
     def defang(self, list_content):
@@ -372,7 +368,7 @@ class TwitterScraperEmailUpdates(IOBase):
 
     def format_text_content(self, reports_by_user):
         lines = []
-        twtr_url = lambda tm_id: TWTR_URL + str(tm_id).encode('utf-8')
+        twtr_url = lambda tm_id: PBIN_URL + str(tm_id).encode('utf-8')
         ts_ec = lambda ts: ts.encode('utf-8')
         startheader = u'==== Start {} Section ===='
         endheader = u'==== End {} Section ===='
@@ -383,35 +379,34 @@ class TwitterScraperEmailUpdates(IOBase):
             for tm_id, r in user_recs.items():
                 add_tags_kws = False
                 timestamp = r['timestamp']
-                # t = ()
-                logging.info("%s: %s" % (ts_ec(timestamp), twtr_url(tm_id)))
-                _lines = [tweet_header.format(ts_ec(timestamp), twtr_url(tm_id))]
-                if len(r[consts.HASHES]) > 0:
+                t = (ts_ec(timestamp), twtr_url(tm_id))
+                _lines = [tweet_header.format(t)]
+                if len(r[HASHES]) > 0:
                     m = u"|========     hashes: {}"
-                    _lines.append(m.format(self.defang(r[consts.HASHES])))
+                    _lines.append(m.format(self.defang(r[HASHES])))
                     add_tags_kws = True
-                if len(r[consts.DF_DOMAIN]) > 0:
-                    m = u"|========     defanged domains: {}"
-                    _lines.append(m.format(self.defang(r[consts.DF_DOMAIN])))
+                if len(r[DOMAINS]) > 0:
+                    m = u"|========     domains: {}"
+                    _lines.append(m.format(self.defang(r[DOMAINS])))
                     add_tags_kws = True
-                if len(r[consts.DF_URL]) > 0:
-                    m = u"|========     defanged urls: {}"
-                    _lines.append(m.format(self.defang(r[consts.DF_URL])))
+                if len(r[URLS]) > 0:
+                    m = u"|========     urls: {}"
+                    _lines.append(m.format(self.defang(r[URLS])))
                     add_tags_kws = True
-                if len(r[consts.DF_IP]) > 0:
-                    m = u"|========     defanged ips: {}"
-                    _lines.append(m.format(self.defang(r[consts.DF_IP])))
+                if len(r[IPS]) > 0:
+                    m = u"|========     ips: {}"
+                    _lines.append(m.format(self.defang(r[IPS])))
                     add_tags_kws = True
-                if len(r[consts.DF_EMAIL]) > 0:
-                    m = u"|========     defanged emails: {}"
-                    _lines.append(m.format(self.defang(r[consts.DF_EMAIL])))
+                if len(r[EMAILS]) > 0:
+                    m = u"|========     emails: {}"
+                    _lines.append(m.format(self.defang(r[EMAILS])))
                     add_tags_kws = True
-                if len(r[consts.HASH_TAG]) > 0 and add_tags_kws:
+                if len(r[TAGS]) > 0 and add_tags_kws:
                     m = u"|========     tags: {}"
-                    _lines.append(m.format(self.defang(r[consts.HASH_TAG])))
-                if len(r[consts.KEYWORDS]) > 0 and add_tags_kws:
+                    _lines.append(m.format(self.defang(r[TAGS])))
+                if len(r[KEYWORDS]) > 0 and add_tags_kws:
                     m = u"|========     keywords: {}"
-                    _lines.append(m.format(self.defang(r[consts.KEYWORDS])))
+                    _lines.append(m.format(self.defang(r[KEYWORDS])))
 
                 if len(_lines) > 1:
                     __lines = __lines + _lines + ['|', ]

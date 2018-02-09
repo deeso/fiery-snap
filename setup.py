@@ -13,7 +13,7 @@ setup(name='fiery-snap',
       author_email='bantonie@cisco.com, adpridge@cisco.com',
       install_requires=['toml', 'kombu', 'redis', 'validators',
                         'web.py', 'regex', 'python-twitter',
-                        'bs4', 'pymongo', 'requests' ],
+                        'bs4', 'pymongo', 'requests'],
       packages=find_packages('src'),
       package_dir={'': 'src'},
 )

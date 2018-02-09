@@ -1,4 +1,3 @@
-
 from fiery_snap.impl.input.twitter_source import TwitterSource
 from fiery_snap.impl.input.pastebin_source import PastebinSource
 from fiery_snap.impl.input.kombu_source import KombuClientProducer

@@ -8,3 +8,6 @@ python-twitter
 bs4
 pymongo
 requests
+google-api-python-client
+https://github.com/deeso/ioc-regex/tarball/master#egg=ioc-regex
+https://github.com/deeso/simple-pastebin-client/tarball/master#egg=simple-pastebin-client
