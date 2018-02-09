@@ -119,161 +119,86 @@ class PastebinScraper(BaseProcessor):
             pair = (tag, regex.compile(trex))
             self.regex_tags.append(pair)
 
+    def extract_contents(self, content):
+        # get some content from the message and replace \u2026
+        # DEBUG_CONTENT.append(content)
+        # RE extract entities (hosts, domains, IPs, s), links
+        rexk = self.regex_keywords
+        entities = IOCREX.extract_all_possible(content,
+                                               addl_keywords=rexk)
+
+        domains = entities[consts.DOMAIN] + entities[consts.DF_DOMAIN]
+        hashes_s = [consts.MD5, consts.SHA1,
+                    consts.SHA256, consts.SHA512]
+
+        for k in hashes_s:
+            del entities[k]
+
+        tags = [i.strip('#') for i in entities[consts.HASH_TAG]]
+        entities[consts.HASH_TAG] = tags
+        entities['processed_tags'] = self.hashtags_with_tags(tags)
+        entities['site_rankings'] = self.lookup_sites_rank(domains)
+
+        # us = self.expand_twitter_urls_extract_content(entities[consts.URL])
+        # entities['linked_content'] = us
+
+        keys = [consts.DOMAIN, consts.DF_DOMAIN]
+        for k in keys:
+            new_items = []
+            _t = entities.get(k, [])
+            new_items = [d for d in _t if not IOCREX.filter_domain(d)]
+            entities[k] = new_items
+
+        keys = [consts.URL, consts.DF_URL, consts.URL_POT, consts.DF_URL_POT]
+        for k in keys:
+            new_items = []
+            urls = entities.get(k, [])
+            _s = zip(urls,
+                     IOCREX.hosts_from_urls(urls, True))
+            new_items = [u for u, d in _s if not IOCREX.filter_domain(d)]
+            entities[k] = new_items
+
+        edip = entities[consts.DF_DOMAIN] + entities[consts.DF_IP]
+        adip = []  # us[consts.DF_DOMAIN] + us[consts.DF_IP]
+        ht = entities[consts.HASH_TAG]  # + us[consts.HASH_TAG]
+        kw = entities[consts.KEYWORDS]  # + us[consts.KEYWORDS]
+        safe_hosts = [i.replace('.', '[.]') for i in edip + adip]
+
+        entities[consts.HASH_TAG] = ht
+        entities[consts.KEYWORDS] = kw
+        entities['safe_hosts'] = safe_hosts
+        good_message = IOCREX.is_good_result(entities)
+        return good_message, entities
+
     def process_message(self, omessage):
         # local fns for extraction and validatition
-        def extract_host(s):
-            if len(s.split('://')) > 1:
-                s.split('://')[1].split('/')[0]
-            return s
-
-        def v_all(v, l):
-            return [i for i in l if v(i)]
-
+        kargs = {}
+        content = replace_st(omessage.get_content())
+        good_message, entities = self.extract_contents(content)
         message = omessage.copy()
         message.add_field('processor', self.name)
         message.add_field('processor_type', self.class_map_key())
-        # get some content from the message and replace \u2026
-        content = replace_st(message.get_content())
-        DEBUG_CONTENT.append(message)
-        # RE extract entities (hosts, domains, IPs, URLs), links
-        entities = {}
-        defanged_entities = {}
-        ds, df_ds = IOCREX.extract_value(consts.DOMAIN, content)
-        ips, defanged_ips = IOCREX.extract_value(consts.IP, content)
-        emails, defanged_emails = IOCREX.extract_value(consts.EMAIL, content)
-        entities[consts.IPS] = sorted(set(ips))
-        defanged_entities[consts.IPS] = sorted(set(defanged_ips))
-        entities[consts.EMAILS] = sorted(set(emails))
-        defanged_entities[consts.EMAILS] = sorted(set(defanged_emails))
-
-        entities[consts.DOMAINS] = []
-        defanged_entities[consts.DOMAINS] = []
-        for domain in ds:
-            g = any([ip.find(domain) > -1 for ip in entities[consts.IPS]])
-            if g:
-                continue
-            if IOCREX.possible_domain(domain):
-                defanged_entities[consts.DOMAINS].append(domain)
-
-        for domain in df_ds:
-            g = []
-            for ip in defanged_entities[consts.IPS]:
-                g.append(ip.find(domain) > -1)
-            if g:
-                continue
-            if IOCREX.possible_domain(domain):
-                defanged_entities[consts.DOMAINS].append(domain)
-
-        entities[consts.DOMAINS] = sorted(set(entities[consts.DOMAINS]))
-        _t = set(defanged_entities[consts.DOMAINS])
-        defanged_entities[consts.DOMAINS] = sorted(_t)
-
-        md5, _ = IOCREX.extract_value(consts.MD5, content)
-        sha1, _ = IOCREX.extract_value(consts.SHA1, content)
-        sha256, _ = IOCREX.extract_value(consts.SHA256, content)
-        sha512, _ = IOCREX.extract_value(consts.SHA512, content)
-        entities[consts.HASHES] = list(set(md5 + sha1 + sha256 + sha512))
-
-        entities[consts.URLS] = []
-        defanged_entities[consts.URLS] = []
-
-        urls, defanged_urls = IOCREX.extract_value(consts.URL, content)
-        # pot_url_ign = set()
-        # for u in urls:
-        #     scheme, rest = u.split('://')[0], '://'.join(u.split('://')[1:])
-        #     scheme = scheme.lower().replace('x', 't')
-        #     entities[consts.URLS].append(scheme+'://'+rest)
-        #     pot_url_ign.add(rest)
-
-        # pot_url_ign = set()
-        # for u in defanged_urls:
-        #     defanged_entities[consts.URLS].append(scheme+'://'+rest)
-        #     pot_url_ign.add(rest)
-
-        entities[consts.URLS] = sorted(set(entities[consts.URLS]))
-        df_us = sorted(set(defanged_entities[consts.URLS]))
-        defanged_entities[consts.URLS] = df_us
-
-        pus, dpus = IOCREX.extract_value_must_contain(consts.URL_POT,
-                                                      content,
-                                                      mc=['.', '/'])
-        pot_urls = [i for i in sorted(set(pus)) if not is_twitter_co(i)]
-        df_pot_urls = [i for i in sorted(set(pus)) if not is_twitter_co(i)]
-
-        entities['pot_urls'] = pot_urls
-        defanged_entities['pot_urls'] = df_pot_urls
-
-        hosts = entities[consts.IPS] + entities[consts.DOMAINS]
-        for i in entities[consts.URLS]:
-            nh = IOCREX.extract_host(i)
-            hosts.append(nh)
-
-        safe_hosts = [i.replace('.', '[.]') for i in hosts]
-        entities['safe_hosts'] = safe_hosts
-        tags = self.find_hashtags(content)
-        if 'hashtags' in message['meta']:
-            _tags = [i.values()[0] for i in message['meta']['hashtags']]
-            tags = sorted(set(tags + _tags))
-
-        keywords = self.find_keywords(content)
-        message['tags'] = tags
-        message['keywords'] = keywords
+        message['version'] = '323'
         message['entities'] = entities
-        message['defanged_entities'] = defanged_entities
+        message['linked_content'] = entities['linked_content']
+        del entities['linked_content']
 
-        kargs = {}
+        message['tags'] = entities['processed_tags']
+        del entities['processed_tags']
+
+        kargs['safe_hosts'] = entities['safe_hosts']
+        del entities['safe_hosts']
+
         kargs.update(message.as_dict())
-        kargs.update(entities)
         message['simple_message'] = self.simple_msg.format(**kargs)
 
         pmsg = Message({})
         for k in self.ALLOWED_OUT_MESSAGE_KEYS:
             pmsg[k] = message.get(k, None)
+        # pmsg['entities'] = entities
 
         # need to limit messages to ones that contain content
-        entities = pmsg['entities']
-        linked_content = pmsg['linked_content']
-
-        entities_failed = False
-        if len(entities["domains"]) == 0 and \
-           len(entities["emails"]) == 0 and \
-           len(entities["hashes"]) == 0 and \
-           len(entities["ips"]) == 0 and \
-           len(entities["pot_urls"]) == 0 and \
-           len(entities["urls"]) == 0 and \
-           len(tags) == 0:
-            entities_failed = True
-
-        linked_content_failed = False
-        if linked_content is None or len(linked_content) == 0:
-            linked_content_failed = True
-        else:
-            # check to see of domains, ips, hashes, links, exist in any content
-            found_one = False
-            for info in linked_content:
-                ca = info.get('content_artifacts', None)
-                if ca is None:
-                    continue
-                if consts.DOMAINS in ca and len(ca[consts.DOMAINS]) > 0:
-                    found_one = True
-                    break
-                elif consts.HASHES in ca and len(ca[consts.HASHES]) > 0:
-                    found_one = True
-                    break
-                elif consts.IPS in ca and len(ca[consts.IPS]) > 0:
-                    found_one = True
-                    break
-                elif consts.LINKS in ca and len(ca[consts.LINKS]) > 0:
-                    found_one = True
-                    break
-
-            if not found_one:
-                linked_content_failed = True
-
-        domains = entities[consts.DOMAINS] + defanged_entities[consts.DOMAINS]
-        pmsg['rankings'] = self.lookup_sites_rank(domains)
-        return_none = linked_content_failed and entities_failed
-        return None if return_none else pmsg
+        return None if not good_message else pmsg
 
     def root_domain(self, domain):
         c = domain.strip('.')
@@ -300,25 +225,6 @@ class PastebinScraper(BaseProcessor):
             domain_results[rdomain] = results
             domain_results[domain] = results
         return domain_results
-
-    def find_hashtags(self, content):
-        hti, _ = IOCREX.extract_value(consts.HASH_TAG, content)
-        hashtags = [i.strip('#') for i in hti]
-        return self.hashtags_with_tags(hashtags)
-
-    def find_keywords(self, content):
-        found_keywords = set()
-        _c = content
-        if self.regex_keywords_ci:
-            _c = content.lower()
-
-        for rv, regx in self.regex_keywords:
-            if rv in found_keywords:
-                continue
-            v, _ = self.extract_value(regx, _c)
-            if len(v) > 0:
-                found_keywords.add(rv)
-        return list(found_keywords)
 
     def hashtags_with_tags(self, hashtags):
         nhashtags = set()

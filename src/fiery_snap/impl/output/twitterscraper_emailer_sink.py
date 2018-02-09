@@ -10,7 +10,6 @@ import logging
 TWTR_URL = u"https://twitter.com/i/web/status/"
 CONTENT_ARTIFACTS = 'content_artifacts'
 
-
 REPORT_ITEMS = [consts.HASHES, consts.DOMAIN, consts.EMAIL, consts.URL, consts.URL, consts.IP]
 
 

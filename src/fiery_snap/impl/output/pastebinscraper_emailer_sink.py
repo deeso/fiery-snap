@@ -4,26 +4,15 @@ from fiery_snap.impl.util.page import ConsumePage, \
 from fiery_snap.io.io_base import IOBase
 from fiery_snap.impl.util.simplified_email import SendEmail
 from fiery_snap.impl.util.mongo_client_impl import MongoClientImpl
+from ioc_regex import consts
 import logging
 
 PBIN_URL = u"https://pastebin.com/raw/{}"
-TAGS = 'tags'
-KEYWORDS = 'keywords'
-HASHES = 'hashes'
-DOMAINS = 'domains'
-EMAILS = 'emails'
-URLS = 'urls'
-PURLS = 'pot_urls'
-IPS = 'ips'
 CONTENT_ARTIFACTS = 'content_artifacts'
 
-DF_DOMAINS = 'defanged_domains'
-DF_EMAILS = 'defanged_emails'
-DF_URLS = 'defanged_links'
-DF_IPS = 'defanged_ips'
-DF_LINKS = DF_URLS
 
-REPORT_ITEMS = [HASHES, DOMAINS, EMAILS, URLS, PURLS, IPS, CONTENT_ARTIFACTS]
+REPORT_ITEMS = [consts.HASHES, consts.DOMAIN, consts.EMAIL,
+                consts.URL, consts.URL, consts.IP]
 
 
 class PastebinScraperEmailUpdates(IOBase):
@@ -291,13 +280,18 @@ class PastebinScraperEmailUpdates(IOBase):
         reports_by_user = {}
         for r in results:
             tm_id = r['tm_id']
-            tags = r[TAGS]
-            keywords = r[KEYWORDS]
+            entities = r['entities']
+            tags = r['tags']
+            htags = entities[consts.HASH_TAG]
+            keywords = entities[consts.KEYWORDS]
+
             reports = self.update_with_defanged_entities_content(r, tm_id, reports)
             user = reports[tm_id]['user']
             if user not in reports_by_user:
                 reports_by_user[user] = {}
-            n_rec = {KEYWORDS: keywords, TAGS: tags}
+            n_rec = {consts.KEYWORDS: keywords,
+                     consts.HASH_TAG: htags,
+                     'tags': tags, }
             reports_by_user[user][tm_id] = n_rec
             for k, v in reports[tm_id].items():
                 if k == 'user':
@@ -307,29 +301,29 @@ class PastebinScraperEmailUpdates(IOBase):
 
     def extract_linked_content(self, record, tm_id, reports):
         linked_content = record['linked_content']
-        for ci in linked_content:
-            if CONTENT_ARTIFACTS not in ci:
-                continue
-            _df_domains = ci[CONTENT_ARTIFACTS][DF_DOMAINS]
-            _df_ips = ci[CONTENT_ARTIFACTS][DF_IPS]
-            _df_links = ci[CONTENT_ARTIFACTS][DF_LINKS]
-            reports[tm_id][DOMAINS] = reports[tm_id][DOMAINS] + _df_domains
-            reports[tm_id][URLS] = reports[tm_id][URLS] + _df_links
-            reports[tm_id][IPS] = reports[tm_id][IPS] + _df_ips
+        _df_domains = linked_content[consts.DF_DOMAIN]
+        _df_ips = linked_content[consts.DF_IP]
+        _df_urls = linked_content[consts.DF_URL]
+        domains = reports[tm_id][consts.DF_DOMAIN] + _df_domains
+        reports[tm_id][consts.DF_DOMAIN] = domains
+        reports[tm_id][consts.DF_URL] = reports[tm_id][consts.DF_URL] + _df_urls
+        reports[tm_id][consts.DF_IP] = reports[tm_id][consts.DF_IP] + _df_ips
         return reports
 
     def extract_entity_item(self, item_name, record, tm_id, reports):
         r = record
-        e = r['defanged_entities']
         e2 = r['entities']
-        items = e.get(item_name, []) + e2.get(item_name, [])
+        items = e2.get(item_name, [])
         items = sorted(set(items))
         reports[tm_id][item_name] = items
         return reports
 
     def update_with_defanged_entities_content(self, record, tm_id, reports):
         r = record
-        items = [HASHES, DOMAINS, EMAILS, URLS, IPS]
+        items = [consts.HASHES, consts.DOMAIN,
+                 consts.EMAIL, consts.URL, consts.IP,
+                 consts.DF_DOMAIN,
+                 consts.DF_EMAIL, consts.DF_URL, consts.DF_IP]
         reports[tm_id] = dict([(i, {}) for i in items])
         reports[tm_id]['content'] = r['content']
         reports[tm_id]['user'] = r['user']
@@ -337,8 +331,19 @@ class PastebinScraperEmailUpdates(IOBase):
         reports[tm_id]['timestamp'] = r.get('timestamp', '')
 
         for item_name in items:
-            reports = self.extract_entity_item(item_name, record, tm_id, reports)
+            reports = self.extract_entity_item(item_name,
+                                               record,
+                                               tm_id,
+                                               reports)
+        reports = self.extract_linked_content(record, tm_id, reports)
+        reports = self.filter_twitter_urls(record, tm_id, reports)
+        return reports
 
+    def filter_twitter_urls(self, record, tm_id, reports):
+        v = [i for i in reports[tm_id][consts.URL] if i.strip().find('://t.co/')]
+        # v = [i for i in v if i.strip().find('https://t.co/') != 0]
+        # v = [i for i in v if i.strip().find('http://t.co/') != 0]
+        reports[tm_id][consts.URL] = sorted(v)
         return reports
 
     def defang(self, list_content):
@@ -379,34 +384,35 @@ class PastebinScraperEmailUpdates(IOBase):
             for tm_id, r in user_recs.items():
                 add_tags_kws = False
                 timestamp = r['timestamp']
-                t = (ts_ec(timestamp), twtr_url(tm_id))
-                _lines = [tweet_header.format(t)]
-                if len(r[HASHES]) > 0:
+                # t = ()
+                logging.info("%s: %s" % (ts_ec(timestamp), twtr_url(tm_id)))
+                _lines = [tweet_header.format(ts_ec(timestamp), twtr_url(tm_id))]
+                if len(r[consts.HASHES]) > 0:
                     m = u"|========     hashes: {}"
-                    _lines.append(m.format(self.defang(r[HASHES])))
+                    _lines.append(m.format(self.defang(r[consts.HASHES])))
                     add_tags_kws = True
-                if len(r[DOMAINS]) > 0:
-                    m = u"|========     domains: {}"
-                    _lines.append(m.format(self.defang(r[DOMAINS])))
+                if len(r[consts.DF_DOMAIN]) > 0:
+                    m = u"|========     defanged domains: {}"
+                    _lines.append(m.format(self.defang(r[consts.DF_DOMAIN])))
                     add_tags_kws = True
-                if len(r[URLS]) > 0:
-                    m = u"|========     urls: {}"
-                    _lines.append(m.format(self.defang(r[URLS])))
+                if len(r[consts.DF_URL]) > 0:
+                    m = u"|========     defanged urls: {}"
+                    _lines.append(m.format(self.defang(r[consts.DF_URL])))
                     add_tags_kws = True
-                if len(r[IPS]) > 0:
-                    m = u"|========     ips: {}"
-                    _lines.append(m.format(self.defang(r[IPS])))
+                if len(r[consts.DF_IP]) > 0:
+                    m = u"|========     defanged ips: {}"
+                    _lines.append(m.format(self.defang(r[consts.DF_IP])))
                     add_tags_kws = True
-                if len(r[EMAILS]) > 0:
-                    m = u"|========     emails: {}"
-                    _lines.append(m.format(self.defang(r[EMAILS])))
+                if len(r[consts.DF_EMAIL]) > 0:
+                    m = u"|========     defanged emails: {}"
+                    _lines.append(m.format(self.defang(r[consts.DF_EMAIL])))
                     add_tags_kws = True
-                if len(r[TAGS]) > 0 and add_tags_kws:
+                if len(r[consts.HASH_TAG]) > 0 and add_tags_kws:
                     m = u"|========     tags: {}"
-                    _lines.append(m.format(self.defang(r[TAGS])))
-                if len(r[KEYWORDS]) > 0 and add_tags_kws:
+                    _lines.append(m.format(self.defang(r[consts.HASH_TAG])))
+                if len(r[consts.KEYWORDS]) > 0 and add_tags_kws:
                     m = u"|========     keywords: {}"
-                    _lines.append(m.format(self.defang(r[KEYWORDS])))
+                    _lines.append(m.format(self.defang(r[consts.KEYWORDS])))
 
                 if len(_lines) > 1:
                     __lines = __lines + _lines + ['|', ]
