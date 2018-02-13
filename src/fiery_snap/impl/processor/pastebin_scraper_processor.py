@@ -30,7 +30,7 @@ def replace_st(content):
 
 
 class PastebinScraper(BaseProcessor):
-    ALLOWED_OUT_MESSAGE_KEYS = ['paste_key', 'content', 'defanged_entities',
+    ALLOWED_OUT_MESSAGE_KEYS = ['paste', 'paste_key', 'content', 'defanged_entities',
                                 'entities', 'timestamp', 'keywords',
                                 'obtained_timestamp', 'user', 'tags', ]
     REQUIRED_CONFIG_PARAMS = []
@@ -187,6 +187,9 @@ class PastebinScraper(BaseProcessor):
 
         kargs['safe_hosts'] = entities['safe_hosts']
         del entities['safe_hosts']
+
+        message['paste'] = entities['meta']['paste']
+        message['paste_key'] = entities['meta']['paste_key']
 
         kargs.update(message.as_dict())
         message['simple_message'] = self.simple_msg.format(**kargs)
