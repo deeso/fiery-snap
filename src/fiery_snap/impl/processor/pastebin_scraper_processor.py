@@ -195,6 +195,7 @@ class PastebinScraper(BaseProcessor):
         message['simple_message'] = self.simple_msg.format(**kargs)
         message['paste'] = paste
         message['paste_key'] = paste_key
+        message['tm_id'] = paste_key
         pmsg = Message({})
         for k in self.ALLOWED_OUT_MESSAGE_KEYS:
             pmsg[k] = message.get(k, None)
