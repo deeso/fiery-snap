@@ -173,6 +173,9 @@ class PastebinScraper(BaseProcessor):
         # local fns for extraction and validatition
         kargs = {}
         content = replace_st(omessage.get_content())
+        paste = omessage['meta']['paste']
+        paste_key = omessage['meta']['paste_key']
+
         good_message, entities = self.extract_contents(content)
         message = omessage.copy()
         message.add_field('processor', self.name)
@@ -188,12 +191,10 @@ class PastebinScraper(BaseProcessor):
         kargs['safe_hosts'] = entities['safe_hosts']
         del entities['safe_hosts']
 
-        message['paste'] = entities['meta']['paste']
-        message['paste_key'] = entities['meta']['paste_key']
-
         kargs.update(message.as_dict())
         message['simple_message'] = self.simple_msg.format(**kargs)
-
+        message['paste'] = paste
+        message['paste_key'] = paste_key
         pmsg = Message({})
         for k in self.ALLOWED_OUT_MESSAGE_KEYS:
             pmsg[k] = message.get(k, None)
