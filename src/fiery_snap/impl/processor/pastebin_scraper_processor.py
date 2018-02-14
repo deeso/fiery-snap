@@ -172,7 +172,8 @@ class PastebinScraper(BaseProcessor):
     def process_message(self, omessage):
         # local fns for extraction and validatition
         kargs = {}
-        content = replace_st(omessage.get_content())
+        content = omessage['meta']['title'] + '\n\n' + omessage['meta']['data']
+        content = replace_st(content)
         paste = omessage['meta']['paste']
         paste_key = omessage['meta']['paste_key']
 
