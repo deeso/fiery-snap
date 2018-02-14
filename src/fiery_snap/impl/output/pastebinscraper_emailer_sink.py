@@ -7,7 +7,7 @@ from fiery_snap.impl.util.mongo_client_impl import MongoClientImpl
 from ioc_regex import consts
 import logging
 
-PBIN_URL = u"https://pastebin.com/raw/{}"
+PBIN_URL = u"https://pastebin.com/{}"
 CONTENT_ARTIFACTS = 'content_artifacts'
 
 
@@ -279,9 +279,8 @@ class PastebinScraperEmailUpdates(IOBase):
         reports = {}
         reports_by_user = {}
         for r in results:
-            tm_id = r['tm_id']
+            tm_id = r['paste_key']
             entities = r['entities']
-            tags = r['tags']
             htags = entities[consts.HASH_TAG]
             keywords = entities[consts.KEYWORDS]
 
