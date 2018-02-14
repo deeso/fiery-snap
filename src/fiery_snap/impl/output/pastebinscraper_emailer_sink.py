@@ -375,10 +375,10 @@ class PastebinScraperEmailUpdates(IOBase):
                 # t = ()
                 logging.info("%s: %s" % (ts_ec(timestamp), pb_url(tm_id)))
                 _lines = [tweet_header.format(ts_ec(timestamp), pb_url(tm_id))]
-                if len(r[consts.HASHES]) > 0:
-                    m = u"|========     hashes: {}"
-                    _lines.append(m.format(self.defang(r[consts.HASHES])))
-                    add_tags_kws = True
+                # if len(r[consts.HASHES]) > 0:
+                #     m = u"|========     hashes: {}"
+                #     _lines.append(m.format(self.defang(r[consts.HASHES])))
+                #     add_tags_kws = True
                 if len(r[consts.DF_DOMAIN]) > 0:
                     m = u"|========     defanged domains: {}"
                     _lines.append(m.format(self.defang(r[consts.DF_DOMAIN])))
