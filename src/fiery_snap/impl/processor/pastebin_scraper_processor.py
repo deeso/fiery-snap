@@ -184,6 +184,7 @@ class PastebinScraper(BaseProcessor):
         message.add_field('processor_type', self.class_map_key())
         message['version'] = '323'
         message['entities'] = entities
+        message['content'] = content
         # message['linked_content'] = entities['linked_content']
         # del entities['linked_content']
 
@@ -198,7 +199,6 @@ class PastebinScraper(BaseProcessor):
         message['paste'] = paste
         message['paste_key'] = paste_key
         message['tm_id'] = paste_key
-        message['content'] = content
         pmsg = Message({})
         for k in self.ALLOWED_OUT_MESSAGE_KEYS:
             pmsg[k] = message.get(k, None)
