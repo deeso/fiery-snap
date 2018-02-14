@@ -284,13 +284,14 @@ class PastebinScraperEmailUpdates(IOBase):
             htags = entities[consts.HASH_TAG]
             keywords = entities[consts.KEYWORDS]
 
-            reports = self.update_with_defanged_entities_content(r, tm_id, reports)
+            reports = self.update_with_defanged_entities_content(r,
+                                                                 tm_id,
+                                                                 reports)
             user = reports[tm_id]['user']
             if user not in reports_by_user:
                 reports_by_user[user] = {}
             n_rec = {consts.KEYWORDS: keywords,
-                     consts.HASH_TAG: htags,
-                     'tags': tags, }
+                     consts.HASH_TAG: htags, }
             reports_by_user[user][tm_id] = n_rec
             for k, v in reports[tm_id].items():
                 if k == 'user':
