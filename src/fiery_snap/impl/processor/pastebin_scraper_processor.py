@@ -31,9 +31,8 @@ def replace_st(content):
 
 class PastebinScraper(BaseProcessor):
     ALLOWED_OUT_MESSAGE_KEYS = ['paste', 'paste_key', 'content', 'defanged_entities',
-                                'entities', 'timestamp', 'keyword',
-                                'obtained_timestamp', 'user', 'tags',
-                                'hashtag']
+                                'entities', 'timestamp',
+                                'obtained_timestamp', 'user', 'tags']
     REQUIRED_CONFIG_PARAMS = []
     OPTIONAL_CONFIG_PARAMS = []
     KEY = 'PastebinScraper'

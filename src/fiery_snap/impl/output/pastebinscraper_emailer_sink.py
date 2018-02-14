@@ -298,17 +298,6 @@ class PastebinScraperEmailUpdates(IOBase):
                 n_rec[k] = v
         return reports_by_user
 
-    def extract_linked_content(self, record, tm_id, reports):
-        linked_content = record['linked_content']
-        _df_domains = linked_content[consts.DF_DOMAIN]
-        _df_ips = linked_content[consts.DF_IP]
-        _df_urls = linked_content[consts.DF_URL]
-        domains = reports[tm_id][consts.DF_DOMAIN] + _df_domains
-        reports[tm_id][consts.DF_DOMAIN] = domains
-        reports[tm_id][consts.DF_URL] = reports[tm_id][consts.DF_URL] + _df_urls
-        reports[tm_id][consts.DF_IP] = reports[tm_id][consts.DF_IP] + _df_ips
-        return reports
-
     def extract_entity_item(self, item_name, record, tm_id, reports):
         r = record
         e2 = r['entities']
@@ -334,8 +323,6 @@ class PastebinScraperEmailUpdates(IOBase):
                                                record,
                                                tm_id,
                                                reports)
-        reports = self.extract_linked_content(record, tm_id, reports)
-        reports = self.filter_twitter_urls(record, tm_id, reports)
         return reports
 
     def filter_twitter_urls(self, record, tm_id, reports):
