@@ -360,7 +360,8 @@ class PastebinScraperEmailUpdates(IOBase):
 
     def format_text_content(self, reports_by_user):
         lines = []
-        twtr_url = lambda tm_id: PBIN_URL + str(tm_id).encode('utf-8')
+        sec = lambda tm_id: str(tm_id).encode('utf-8')
+        pb_url = lambda tm_id: PBIN_URL.format(sec(tm_id))
         ts_ec = lambda ts: ts.encode('utf-8')
         startheader = u'==== Start {} Section ===='
         endheader = u'==== End {} Section ===='
@@ -372,8 +373,8 @@ class PastebinScraperEmailUpdates(IOBase):
                 add_tags_kws = False
                 timestamp = r['timestamp']
                 # t = ()
-                logging.info("%s: %s" % (ts_ec(timestamp), twtr_url(tm_id)))
-                _lines = [tweet_header.format(ts_ec(timestamp), twtr_url(tm_id))]
+                logging.info("%s: %s" % (ts_ec(timestamp), pb_url(tm_id)))
+                _lines = [tweet_header.format(ts_ec(timestamp), pb_url(tm_id))]
                 if len(r[consts.HASHES]) > 0:
                     m = u"|========     hashes: {}"
                     _lines.append(m.format(self.defang(r[consts.HASHES])))
