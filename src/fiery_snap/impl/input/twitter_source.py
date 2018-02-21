@@ -13,6 +13,9 @@ from twitter import Api
 import logging
 import traceback
 
+TS_FMT = "%Y-%m-%d %H:%M:%S"
+TIME_NOW = datetime.now().strftime(TS_FMT)
+
 
 class TwitterClientImpl(object):
     TWT_FMT = 'https://twitter.com/{}/status/{}'
@@ -229,8 +232,9 @@ class TwitterSource(IOBase):
         return handles
 
     def get_last_id(self, handle):
+        global TIME_NOW
         last_ids = self.config['last_ids']
-        return last_ids[handle] if handle in last_ids else None
+        return last_ids[handle] if handle in last_ids else TIME_NOW
 
     def set_last_id(self, handle, last_id):
         last_ids = self.config['last_ids']

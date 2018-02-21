@@ -6,6 +6,10 @@ from fiery_snap.impl.util.simplified_email import SendEmail
 from fiery_snap.impl.util.mongo_client_impl import MongoClientImpl
 from ioc_regex import consts
 import logging
+from datetime import datetime
+
+TS_FMT = "%Y-%m-%d %H:%M:%S"
+TIME_NOW = datetime.now().strftime(TS_FMT)
 
 PBIN_URL = u"https://pastebin.com/{}"
 CONTENT_ARTIFACTS = 'content_artifacts'
@@ -209,9 +213,10 @@ class PastebinScraperEmailUpdates(IOBase):
 
     @classmethod
     def parse(cls, config_dict):
+        global TIME_NOW
         new_config_dict = {}
         new_config_dict['name'] = config_dict.get('name')
-        v = config_dict.get('start_timestamp', None)
+        v = config_dict.get('start_timestamp', TIME_NOW)
         new_config_dict['start_timestamp'] = v
         new_config_dict['service'] = config_dict.get('service')
 

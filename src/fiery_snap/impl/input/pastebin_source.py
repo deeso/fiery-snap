@@ -11,6 +11,9 @@ import json
 import logging
 import traceback
 
+TS_FMT = "%Y-%m-%d %H:%M:%S"
+TIME_NOW = datetime.now().strftime(TS_FMT)
+
 
 class PastebinClientImpl(object):
     REQUIRED_CONFIG_PARAMS = ['handle', 'name']
@@ -190,8 +193,9 @@ class PastebinSource(IOBase):
         return handles
 
     def get_last_ts(self, handle):
+        global TIME_NOW
         last_tss = self.config['last_tss']
-        return last_tss[handle] if handle in last_tss else None
+        return last_tss[handle] if handle in last_tss else TIME_NOW
 
     def set_last_ts(self, handle, last_ts):
         last_tss = self.config['last_tss']
