@@ -143,7 +143,7 @@ class MongoClientImpl(object):
     def get_all(self, dbname=None, colname=None, obj_dict={}):
         colname = self.colname if colname is None else colname
         dbname = self.dbname if dbname is None else dbname
-        print dbname, colname
+        #print dbname, colname
         db_conn = self._conn[dbname]
         col_conn = db_conn[colname]
         try:
@@ -170,7 +170,7 @@ class MongoClientImpl(object):
         colname = self.colname if colname is None else colname
         dbname = self.dbname if dbname is None else dbname
         db_conn = self._conn[dbname]
-        print dbname, colname, update, _id
+        #print dbname, colname, update, _id
         if update and _id is not None and \
            self.has_obj({'_id': _id}, dbname, colname):
            db_conn[colname].replace_one({'_id': _id}, content, bypass_document_validation=True)
