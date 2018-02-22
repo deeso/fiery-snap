@@ -179,6 +179,7 @@ class PastebinScraper(BaseProcessor):
 
         good_message, entities = self.extract_contents(content)
         message = omessage.copy()
+        message['timestamp'] = message['timestamp'].replace('T', ' ').replace('Z', '')
         message.add_field('processor', self.name)
         message.add_field('processor_type', self.class_map_key())
         message['version'] = '323'
