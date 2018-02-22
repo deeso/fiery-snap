@@ -276,7 +276,7 @@ class PastebinScraperEmailUpdates(IOBase):
             query = {'obtained_timestamp': {'$gt': timestamp}}
 
         # create query based on state
-        results = self.results_db_conn.get_all(obj_dict=query)
+        results = self.self.new_result_client().get_all(obj_dict=query)
         return results
 
     def aggregate_results_by_user(self, results):
