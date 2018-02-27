@@ -122,8 +122,12 @@ class PastebinScraper(BaseProcessor):
         # get some content from the message and replace \u2026
         # DEBUG_CONTENT.append(content)
         # RE extract entities (hosts, domains, IPs, s), links
+        replace_chars = ['''`~!@#$^&*()'"{}''']
+        new_content = content
+        for c in replace_chars:
+            new_content = new_content.replace(c, ' ')
         rexk = self.regex_keywords
-        entities = IOCREX.extract_all_possible(content,
+        entities = IOCREX.extract_all_possible(new_content,
                                                addl_keywords=rexk)
 
         domains = entities[consts.DOMAIN] + entities[consts.DF_DOMAIN]
