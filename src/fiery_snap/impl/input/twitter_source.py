@@ -15,12 +15,7 @@ import logging
 import traceback
 
 TS_FMT = "%Y-%m-%d %H:%M:%S"
-TZ_FMT = "%Y-%m-%dT%H:%M:%SZ"
-
 TIME_NOW = datetime.now().strftime(TS_FMT)
-TZ_TIME_NOW = datetime.now().strftime(TZ_FMT)
-
-
 
 class TwitterClientImpl(object):
     TWT_FMT = 'https://twitter.com/{}/status/{}'
@@ -38,6 +33,7 @@ class TwitterClientImpl(object):
     def __init__(self, **kargs):
         self.api = None
         self.last_id = None
+        self.last_ts = None
         self.ignore_rts = True
 
         for k in self.REQUIRED_CONFIG_PARAMS:
@@ -85,14 +81,15 @@ class TwitterClientImpl(object):
             if self.last_id is None or \
                long(p.id) > long(self.last_id):
                 self.last_id = str(p.id)
+                self.last_ts = parsedate_to_datetime(p.created_at).strftime(TS_FMT)
 
             js['meta'] = p.AsDict()
             js['tm_id'] = js['meta']['id']
 
             js['references'] = [self.TWT_FMT.format(self.handle, p.id), ]
             js['link'] = self.TWT_FMT.format(self.handle, p.id)
-            js['timestamp'] = parsedate_to_datetime(p.created_at)
-            n = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            js['timestamp'] = parsedate_to_datetime(p.created_at).strftime(TS_FMT)
+            n = datetime.utcnow().strftime(TS_FMT)
             js['obtained_timestamp'] = n
             if self.content is None or self.content not in js['meta']:
                 js['content'] = json.dumps(p.AsDict())
@@ -274,13 +271,15 @@ class TwitterSource(IOBase):
         ts_handle_infos = self.config['ts_handle_infos']
         return ts_handle_infos[handle]['tm_id'] if handle in ts_handle_infos else TIME_NOW
 
-    def set_last_tm_read(self, handle, last_id):
-        timestamp = datetime.utcnow().strftime(TZ_FMT)
+    def set_last_tm_read(self, handle, last_id, last_ts):
         ts_handle_infos = self.config['ts_handle_infos']
-        ts_handle_infos[handle]['tm_id'] = last_id
-        ts_handle_infos[handle]['timestamp'] = timestamp
-        if self.use_mongo:
-            self.save_mongo_handle(handle)
+        if last_ts is None:
+            last_ts = datetime.utcnow().strftime(TS_FMT)
+        if last_id is not None:
+            ts_handle_infos[handle]['tm_id'] = last_id
+            ts_handle_infos[handle]['timestamp'] = last_ts
+            if self.use_mongo:
+                self.save_mongo_handle(handle)
 
     def consume(self):
         all_posts = {}
@@ -292,7 +291,8 @@ class TwitterSource(IOBase):
             logging.debug("Consuming posts from: %s" % handle)
             posts = tc.consume()
             all_posts[handle] = posts
-            self.set_last_tm_read(handle, tc.last_id)
+            if tc.last_id is not None:
+                self.set_last_tm_read(handle, tc.last_id, tc.last_ts)
 
         return all_posts
 
@@ -306,7 +306,6 @@ class TwitterSource(IOBase):
         s = '{name}: {uri} {dbname}[{colname}]'.format(**client_params)
         logging.debug("Initializing MongoClient to: %s"%(s))
         return MongoClientImpl(**client_params)
-
 
     def read_mongo_handles(self):
         handle_recs = self.new_mongo_handle_client().get_all(dbname=self.dbname, 
@@ -334,7 +333,6 @@ class TwitterSource(IOBase):
                                                update=True,)
         return r
 
-
     def update_mongo_handles(self):
         ts_handle_infos = self.config['ts_handle_infos']
         self.new_mongo_handle_client().inserts(ts_handle_infos.values(),
@@ -348,8 +346,6 @@ class TwitterSource(IOBase):
                     ts_handle_infos[h] = v
             self.config['ts_handle_infos'] = ts_handle_infos
 
-
-
     def consume_publish_lockstep(self):
         all_posts = {}
 
@@ -361,7 +357,8 @@ class TwitterSource(IOBase):
             logging.debug("Consuming posts from: %s" % handle)
             posts = tc.consume()
             all_posts[handle] = posts
-            self.set_last_tm_read(handle, tc.last_id)
+            if tc.last_id is not None:
+                self.set_last_tm_read(handle, tc.last_id, tc.last_ts)
             self.publish_all_posts({'handle': all_posts[handle]})
         return all_posts
 
