@@ -13,7 +13,7 @@ import logging
 import traceback
 
 TS_FMT = "%Y-%m-%d %H:%M:%S"
-TIME_NOW = datetime.now().strftime(TS_FMT)
+TIME_PS_STARTED = datetime.now().strftime(TS_FMT)
 
 def unix_timestamp_to_format(unix_ts):
     if unix_ts is None:
@@ -203,6 +203,8 @@ class PastebinSource(IOBase):
             k = h.get('handle')
             v = {'timestamp':h.get('timestamp', None), 
                  'paste_key':h.get('paste_key', None), 'handle':k}
+            if v['timestamp'] == None:
+                v['timestamp'] = TIME_PS_STARTED
             handle_infos[k] = v
         return handle_infos
 
@@ -292,9 +294,9 @@ class PastebinSource(IOBase):
         return handles
 
     def get_last_ts(self, handle):
-        global TIME_NOW
+        global TIME_PS_STARTED
         last_tss = self.config['last_tss']
-        return last_tss[handle] if handle in last_tss else TIME_NOW
+        return last_tss[handle] if handle in last_tss else TIME_PS_STARTED
 
     def set_last_ts(self, handle, last_id, last_ts):
         ts_handle_infos = self.config['last_tss']
@@ -307,9 +309,9 @@ class PastebinSource(IOBase):
                 self.save_mongo_handle(handle)
 
     def get_last_ts(self, handle):
-        global TIME_NOW
+        global TIME_PS_STARTED
         ts_handle_infos = self.config['last_tss']
-        return ts_handle_infos[handle]['timestamp'] if handle in ts_handle_infos else TIME_NOW
+        return ts_handle_infos[handle]['timestamp'] if handle in ts_handle_infos else TIME_PS_STARTED
 
 
     def consume(self):

@@ -15,7 +15,7 @@ import logging
 import traceback
 
 TS_FMT = "%Y-%m-%d %H:%M:%S"
-TIME_NOW = datetime.now().strftime(TS_FMT)
+TIME_TS_STARTED = datetime.now().strftime(TS_FMT)
 
 class TwitterClientImpl(object):
     TWT_FMT = 'https://twitter.com/{}/status/{}'
@@ -267,9 +267,9 @@ class TwitterSource(IOBase):
         return handles
 
     def get_last_tm_read(self, handle):
-        global TIME_NOW
+        global TIME_TS_STARTED
         ts_handle_infos = self.config['ts_handle_infos']
-        return ts_handle_infos[handle]['tm_id'] if handle in ts_handle_infos else TIME_NOW
+        return ts_handle_infos[handle]['tm_id'] if handle in ts_handle_infos else TIME_TS_STARTED
 
     def set_last_tm_read(self, handle, last_id, last_ts):
         ts_handle_infos = self.config['ts_handle_infos']
@@ -316,6 +316,8 @@ class TwitterSource(IOBase):
             k = h.get('handle')
             v = {'timestamp':h.get('timestamp', None), 
                  'tm_id':h.get('tm_id', None), 'handle':k}
+            if v['timestamp'] == None:
+                v['timestamp'] = TIME_TS_STARTED
             handle_infos[k] = v
         return handle_infos
 
