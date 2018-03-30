@@ -250,7 +250,7 @@ class IOBase(object):
             return True
         self.t.join()
 
-    def periodic_consume(self, sleep_time=1800.0):
+    def periodic_consume(self, sleep_time=30.0):
         sleep_time = self.config.get('sleep_time', sleep_time)
         logging.debug("Starting service with sleep time of %ds"%sleep_time)
         if self.t is None or not self.t.isAlive():

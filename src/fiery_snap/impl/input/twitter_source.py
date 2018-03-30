@@ -140,7 +140,7 @@ class TwitterSource(IOBase):
                               ['mongo_uri', None],
                               ['mongo_host', None],
                               ['mongo_port', 27017],
-                              ['update_from_mongo', True],
+                              ['update_from_mongo', False],
                               ]
 
     def __init__(self, config_dict, add_local=False):

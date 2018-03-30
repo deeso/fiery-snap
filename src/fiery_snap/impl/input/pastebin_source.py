@@ -127,7 +127,7 @@ class PastebinSource(IOBase):
                               ['mongo_uri', None],
                               ['mongo_host', None],
                               ['mongo_port', 27017],
-                              ['update_from_mongo', True],
+                              ['update_from_mongo', False],
 
                               ]
 
