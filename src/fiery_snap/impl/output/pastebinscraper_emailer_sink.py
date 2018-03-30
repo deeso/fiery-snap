@@ -286,8 +286,10 @@ class PastebinScraperEmailUpdates(IOBase):
         for r in results:
             tm_id = r['paste_key']
             entities = r['entities']
-            htags = entities[consts.HASH_TAG]
-            keywords = entities[consts.KEYWORDS]
+            # htags = entities[consts.HASH_TAG]
+            # keywords = entities[consts.KEYWORDS]
+            htags = entities.get(consts.HASH_TAG, [])
+            keywords = entities.get(consts.KEYWORDS, [])
 
             reports = self.update_with_defanged_entities_content(r,
                                                                  tm_id,

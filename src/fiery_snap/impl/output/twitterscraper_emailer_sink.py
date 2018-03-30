@@ -285,8 +285,9 @@ class TwitterScraperEmailUpdates(IOBase):
             tm_id = r['tm_id']
             entities = r['entities']
             tags = r['tags']
-            htags = entities[consts.HASH_TAG]
-            keywords = entities[consts.KEYWORDS]
+            # htags = entities[consts.HASH_TAG]
+            htags = entities.get(consts.HASH_TAG, [])
+            keywords = entities.get(consts.KEYWORDS, [])
 
             reports = self.update_with_defanged_entities_content(r, tm_id, reports)
             user = reports[tm_id]['user']
