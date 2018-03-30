@@ -316,6 +316,8 @@ class TwitterSource(IOBase):
             k = h.get('handle')
             v = {'timestamp':h.get('timestamp', None), 
                  'tm_id':h.get('tm_id', None), 'handle':k}
+            # decided to set this so that we are not 
+            # unnecessarily searching in the past
             if v['timestamp'] == None:
                 v['timestamp'] = TIME_TS_STARTED
             handle_infos[k] = v

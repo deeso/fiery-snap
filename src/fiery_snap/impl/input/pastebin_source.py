@@ -13,7 +13,19 @@ import logging
 import traceback
 
 TS_FMT = "%Y-%m-%d %H:%M:%S"
+TZ_FMT = "%Y-%m-%dT%H:%M:%SZ"
 TIME_PS_STARTED = datetime.now().strftime(TS_FMT)
+
+def convert_last_ts(last_ts):
+    if last_ts is None:
+        return last_ts
+    try:
+        dt = datetime.strptime(last_ts, TS_FMT)
+        return dt.strftime(TZ_FMT)
+    except:
+        return None
+
+
 
 def unix_timestamp_to_format(unix_ts):
     if unix_ts is None:
@@ -52,7 +64,7 @@ class PastebinClientImpl(object):
         try:
             pastes = PasteBinApiClient.user_pastes_data(self.handle,
                                                         do_all=True,
-                                                        after_ts=self.last_ts)
+                                                        after_ts=convert_last_ts(self.last_ts))
         except:
             e = traceback.format_exc()
             m = 'Failed to retrieve pastes with the following exception:\n{}'
@@ -203,6 +215,8 @@ class PastebinSource(IOBase):
             k = h.get('handle')
             v = {'timestamp':h.get('timestamp', None), 
                  'paste_key':h.get('paste_key', None), 'handle':k}
+            # decided to set this so that we are not 
+            # unnecessarily searching in the past
             if v['timestamp'] == None:
                 v['timestamp'] = TIME_PS_STARTED
             handle_infos[k] = v
