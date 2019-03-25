@@ -1,3 +1,4 @@
+*.bak
 .idea/
 venv/
 internal-scripts/

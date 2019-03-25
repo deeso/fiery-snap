@@ -187,7 +187,7 @@ class TwintSource(IOBase):
         if self.use_mongo:
             handle_infos = self.read_mongo_handles()
             ts_handle_infos = self.config['ts_handle_infos']
-            for h, v in handle_infos.items():
+            for h, v in list(handle_infos.items()):
                 if h in ts_handle_infos:
                     ts_handle_infos[h].update(v)
                 elif self.update_from_mongo:
@@ -354,13 +354,13 @@ class TwintSource(IOBase):
 
     def update_mongo_handles(self):
         ts_handle_infos = self.config['ts_handle_infos']
-        self.new_mongo_handle_client().inserts(ts_handle_infos.values(),
+        self.new_mongo_handle_client().inserts(list(ts_handle_infos.values()),
                                                dbname=self.dbname,
                                                colname=self.colname,
                                                update=True, )
         if self.update_from_mongo:
             handle_infos = self.read_mongo_handles()
-            for h, v in handle_infos.items():
+            for h, v in list(handle_infos.items()):
                 if h not in ts_handle_infos:
                     ts_handle_infos[h] = v
             self.config['ts_handle_infos'] = ts_handle_infos
@@ -391,7 +391,7 @@ class TwintSource(IOBase):
 
     def publish_all_posts(self, all_posts):
         msgs = []
-        for handle, posts in all_posts.items():
+        for handle, posts in list(all_posts.items()):
             m = "Publishing msgs %d msgs from %s"
             logging.debug(m % (len(posts), handle))
             for msg in posts:

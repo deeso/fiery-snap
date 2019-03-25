@@ -48,7 +48,7 @@ class MongoStore(IOBase):
         cnt = self.message_count if hasattr(self, 'message_count') else cnt
         messages = []
         #  conn == ..io.connection.Connection
-        for name, conn in self.publishers.items():
+        for name, conn in list(self.publishers.items()):
             _m = "Attempting to consume from: type(conn)=%s" % type(conn)
             logging.debug(_m)
             msgs = conn.consume(cnt=cnt)

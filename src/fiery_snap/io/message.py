@@ -8,10 +8,10 @@ class BaseMessage(object):
     def __init__(self, msg_dict, **kargs):
         self.msg = {}
 
-        for k, v in msg_dict.items():
+        for k, v in list(msg_dict.items()):
             self.msg[k] = v
 
-        for k, v in kargs.items():
+        for k, v in list(kargs.items()):
             self.msg[k] = v
 
     def copy(self):

@@ -13,7 +13,7 @@ import regex
 
 DEBUG_CONTENT = []
 
-ST = u'\u2026'
+ST = '\u2026'
 
 
 def is_twitter_co(host):
@@ -22,7 +22,7 @@ def is_twitter_co(host):
 
 def replace_st(content):
     try:
-        x = unicode(content)
+        x = str(content)
         return x.replace(ST, '')
     except:
         pass
@@ -156,8 +156,8 @@ class PastebinScraper(BaseProcessor):
         for k in keys:
             new_items = []
             urls = entities.get(k, [])
-            _s = zip(urls,
-                     IOCREX.hosts_from_urls(urls, True))
+            _s = list(zip(urls,
+                     IOCREX.hosts_from_urls(urls, True)))
             new_items = [u for u, d in _s if not IOCREX.filter_domain(d)]
             entities[k] = new_items
 
@@ -306,14 +306,14 @@ class PastebinScraper(BaseProcessor):
 
     def is_empty(self):
         results = {}
-        for n, pubsub in self.publishers.items():
+        for n, pubsub in list(self.publishers.items()):
             try:
                 results[n] = pubsub.is_empty()
             except:
                 logging.error("Failed to reset: %s:%s" % (n, type(pubsub)))
                 results[n] = None
 
-        for n, pubsub in self.subscribers.items():
+        for n, pubsub in list(self.subscribers.items()):
             try:
                 results[n] = pubsub.is_empty()
             except:
@@ -333,7 +333,7 @@ class PastebinScraper(BaseProcessor):
             msg_posts = self.consume_and_publish()
             all_posts = {}
             num_posts = 0
-            for k, posts in msg_posts.items():
+            for k, posts in list(msg_posts.items()):
                 all_posts[k] = [i.toJSON() for i in posts]
                 num_posts += len(all_posts[k])
             r = {'msg': 'Consumed %d posts' % num_posts, 'all_posts': None}

@@ -11,7 +11,7 @@ from datetime import datetime
 TS_FMT = "%Y-%m-%d %H:%M:%S"
 TIME_NOW = datetime.now().strftime(TS_FMT)
 
-PBIN_URL = u"https://pastebin.com/{}"
+PBIN_URL = "https://pastebin.com/{}"
 CONTENT_ARTIFACTS = 'content_artifacts'
 
 
@@ -235,7 +235,7 @@ class PastebinScraperEmailUpdates(IOBase):
         new_config_dict['colname'] = v
         new_config_dict['sleep_time'] = config_dict.get('sleep_time', 30.0)
         new_config_dict['recipients'] = []
-        for r in config_dict.get('recipients', {}).values():
+        for r in list(config_dict.get('recipients', {}).values()):
             # name, email
             if isinstance(r, list) and len(r) == 2:
                 d = {'name': r[0], 'email': r[1]}
@@ -300,7 +300,7 @@ class PastebinScraperEmailUpdates(IOBase):
             n_rec = {consts.KEYWORDS: keywords,
                      consts.HASH_TAG: htags, }
             reports_by_user[user][tm_id] = n_rec
-            for k, v in reports[tm_id].items():
+            for k, v in list(reports[tm_id].items()):
                 if k == 'user':
                     continue
                 n_rec[k] = v
@@ -341,11 +341,11 @@ class PastebinScraperEmailUpdates(IOBase):
         return reports
 
     def defang(self, list_content):
-        nl = u''
+        nl = ''
         for i in list_content:
             t = i
             try:
-                i = i.replace(u'.', u'[.]')
+                i = i.replace('.', '[.]')
                 t = i.encode('utf-8')
             except:
                 logging.debug("Failed to encode string URL to utf-8")
@@ -353,7 +353,7 @@ class PastebinScraperEmailUpdates(IOBase):
 
             if len(nl) > 0:
                 try:
-                    nl = nl + u', ' + t.encode('utf-8')
+                    nl = nl + ', ' + t.encode('utf-8')
                 except:
                     logging.debug("Failed to encode string URL to utf-8")
                     continue
@@ -370,13 +370,13 @@ class PastebinScraperEmailUpdates(IOBase):
         sec = lambda tm_id: str(tm_id).encode('utf-8')
         pb_url = lambda tm_id: PBIN_URL.format(sec(tm_id))
         ts_ec = lambda ts: ts.encode('utf-8')
-        startheader = u'==== Start {} Section ===='
-        endheader = u'==== End {} Section ===='
-        tweet_header = u'|===     [{}] {}'
-        for user, user_recs in reports_by_user.items():
+        startheader = '==== Start {} Section ===='
+        endheader = '==== End {} Section ===='
+        tweet_header = '|===     [{}] {}'
+        for user, user_recs in list(reports_by_user.items()):
             __lines = []
             __lines.append(startheader.format(user.encode('utf-8')))
-            for tm_id, r in user_recs.items():
+            for tm_id, r in list(user_recs.items()):
                 add_tags_kws = False
                 timestamp = r['timestamp']
                 # t = ()
@@ -387,26 +387,26 @@ class PastebinScraperEmailUpdates(IOBase):
                 #     _lines.append(m.format(self.defang(r[consts.HASHES])))
                 #     add_tags_kws = True
                 if len(r[consts.DF_DOMAIN]) > 0:
-                    m = u"|========     defanged domains: {}"
+                    m = "|========     defanged domains: {}"
                     _lines.append(m.format(self.defang(r[consts.DF_DOMAIN])))
                     add_tags_kws = True
                 if len(r[consts.DF_URL]) > 0:
-                    m = u"|========     defanged urls: {}"
+                    m = "|========     defanged urls: {}"
                     _lines.append(m.format(self.defang(r[consts.DF_URL])))
                     add_tags_kws = True
                 if len(r[consts.DF_IP]) > 0:
-                    m = u"|========     defanged ips: {}"
+                    m = "|========     defanged ips: {}"
                     _lines.append(m.format(self.defang(r[consts.DF_IP])))
                     add_tags_kws = True
                 if len(r[consts.DF_EMAIL]) > 0:
-                    m = u"|========     defanged emails: {}"
+                    m = "|========     defanged emails: {}"
                     _lines.append(m.format(self.defang(r[consts.DF_EMAIL])))
                     add_tags_kws = True
                 if len(r[consts.HASH_TAG]) > 0 and add_tags_kws:
-                    m = u"|========     tags: {}"
+                    m = "|========     tags: {}"
                     _lines.append(m.format(self.defang(r[consts.HASH_TAG])))
                 if len(r[consts.KEYWORDS]) > 0 and add_tags_kws:
-                    m = u"|========     keywords: {}"
+                    m = "|========     keywords: {}"
                     _lines.append(m.format(self.defang(r[consts.KEYWORDS])))
 
                 if len(_lines) > 1:
@@ -426,8 +426,8 @@ class PastebinScraperEmailUpdates(IOBase):
         sender = fmt_addr(self.sender_details)
         lines = self.format_text_content(reports_by_user)
         s = SendEmail(host, port=port, user=user, password=password)
-        ts = u'=== Report Timestamp: %s ===\n\n' % (timestamp.encode('utf-8'))
-        body = ts + u"\n".join(lines)
+        ts = '=== Report Timestamp: %s ===\n\n' % (timestamp.encode('utf-8'))
+        body = ts + "\n".join(lines)
         subject = self.sender_details['subject']
         recipients = [fmt_addr(rp) for rp in self.recipients]
         r = s.send_mime_message(sender, cc=recipients, subject=subject,

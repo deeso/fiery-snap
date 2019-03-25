@@ -11,7 +11,7 @@ import ctypes
 def ctype_async_raise(thread_obj, exception):
     found = False
     target_tid = 0
-    for tid, tobj in threading._active.items():
+    for tid, tobj in list(threading._active.items()):
         if tobj is thread_obj:
             found = True
             target_tid = tid

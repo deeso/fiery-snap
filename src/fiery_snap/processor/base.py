@@ -32,8 +32,8 @@ class BaseOperation(object):
         fn_obj = None
         try:
             co = compile(raw_code, '<string>', 'exec')
-        except Exception, e:
-            print raw_code
+        except Exception as e:
+            print(raw_code)
             raise Exception(cls.UNABLE_TO_CREATE % (name, str(e)))
 
         if co is not None:
@@ -135,14 +135,14 @@ class BaseProcessor(object):
 
     def is_empty(self):
         results = {}
-        for n, pubsub in self.publishers.items():
+        for n, pubsub in list(self.publishers.items()):
             try:
                 results[n] = pubsub.is_empty()
             except:
                 logging.error("Failed to reset: %s:%s"%(n, type(pubsub)))
                 results[n] = None
 
-        for n, pubsub in self.subscribers.items():
+        for n, pubsub in list(self.subscribers.items()):
             try:
                 results[n] = pubsub.is_empty()
             except:
@@ -151,13 +151,13 @@ class BaseProcessor(object):
         return results
 
     def reset_all(self):
-        for n, pubsub in self.publishers.items():
+        for n, pubsub in list(self.publishers.items()):
             try:
                 pubsub.reset()
             except:
                 logging.error("Failed to reset: %s:%s"%(n, type(pubsub)))
 
-        for n, pubsub in self.subscribers.items():
+        for n, pubsub in list(self.subscribers.items()):
             try:
                 pubsub.reset()
             except:
@@ -227,7 +227,7 @@ class BaseProcessor(object):
         cnt = self.message_count
         messages = []
         #  conn == ..io.connection.Connection
-        for name, conn in self.publishers.items():
+        for name, conn in list(self.publishers.items()):
             pos = 0
             if name == 'local':
                 continue
@@ -269,7 +269,7 @@ class BaseProcessor(object):
         if len(whats) == 0:
             add_local = True
 
-        for name, w in whats.items():
+        for name, w in list(whats.items()):
             name = w.get('name', name)
             qname = w.get('queue_name', None)
             uri = w.get('uri', "")
@@ -290,7 +290,7 @@ class BaseProcessor(object):
                 self.add_publisher(p)
 
     def insert(self, message):
-        for name, pub in self.publishers.items():
+        for name, pub in list(self.publishers.items()):
             pub.insert(message)
 
 
@@ -306,7 +306,7 @@ class BaseProcessor(object):
 
     def publish(self, msg, subscribers=[], exclude=[]):
         if len(subscribers) == 0:
-            for name, subscriber in self.subscribers.items():
+            for name, subscriber in list(self.subscribers.items()):
                 if name == 'local' or name in exclude:
                     continue
                 subscriber.insert(msg)

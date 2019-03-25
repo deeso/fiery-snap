@@ -25,7 +25,7 @@ class IOBase(object):
                 results[k] = config_dict.get(k)
 
         if len(config_dict) > 0 and len(cls.REQUIRED_CONFIG_PARAMS) > 0:
-            for k, v in cls.OPTIONAL_CONFIG_PARAMS.items():
+            for k, v in list(cls.OPTIONAL_CONFIG_PARAMS.items()):
                 results[k] = config_dict.get(k, v)
         return results
 
@@ -51,7 +51,7 @@ class IOBase(object):
         if len(whats) == 0:
             add_local = True
 
-        for name, w in whats.items():
+        for name, w in list(whats.items()):
             name = w.get('name', name)
             qname = w.get('queue_name', None)
             uri = w.get('uri', "")
@@ -102,7 +102,7 @@ class IOBase(object):
 
         my_config_dict = dict(self.OPTIONAL_CONFIG_PARAMS)
 
-        for k,v in my_config_dict.items():
+        for k,v in list(my_config_dict.items()):
             self.config[k] = config_dict.get(k, v)
 
         self._setup_pubsub(self.config, 'publishers')
@@ -196,7 +196,7 @@ class IOBase(object):
 
     def publish(self, msg, subscribers=[], exclude=[]):
         if len(subscribers) == 0:
-            for name, subscriber in self.subscribers.items():
+            for name, subscriber in list(self.subscribers.items()):
                 if name == 'local' or name in exclude:
                     continue
                 subscriber.insert(msg)
@@ -209,7 +209,7 @@ class IOBase(object):
 
 
     def publish_all_msgs(self, msgs):
-        for name, subscriber in self.subscribers.items():
+        for name, subscriber in list(self.subscribers.items()):
             if name == 'local':
                 continue
             subscriber.inserts(msgs)
@@ -271,13 +271,13 @@ class IOBase(object):
             time.sleep(sleep_time)
 
     def reset_all(self):
-        for n, pubsub in self.publishers.items():
+        for n, pubsub in list(self.publishers.items()):
             try:
                 pubsub.reset()
             except:
                 logging.error("Failed to reset: %s:%s"%(n, type(pubsub)))
 
-        for n, pubsub in self.subscribers.items():
+        for n, pubsub in list(self.subscribers.items()):
             try:
                 pubsub.reset()
             except:
@@ -295,14 +295,14 @@ class IOBase(object):
 
     def is_empty(self):
         results = {}
-        for n, pubsub in self.publishers.items():
+        for n, pubsub in list(self.publishers.items()):
             try:
                 results[n] = pubsub.is_empty()
             except:
                 logging.error("Failed to reset: %s:%s"%(n, type(pubsub)))
                 results[n] = None
 
-        for n, pubsub in self.subscribers.items():
+        for n, pubsub in list(self.subscribers.items()):
             try:
                 results[n] = pubsub.is_empty()
             except:

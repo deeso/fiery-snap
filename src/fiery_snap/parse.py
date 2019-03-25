@@ -93,10 +93,10 @@ class ConfigParser(object):
     @classmethod
     def general_parse(cls, toml_dict, class_mapper, btype, **kargs):
         results = {}
-        for name, block in toml_dict.items():
+        for name, block in list(toml_dict.items()):
             t = block.get('type', None)
             if t is None and btype not in class_mapper:
-                print block
+                print(block)
                 raise Exception('Missing %s parameter in %s.%s' %
                                 ('type', btype, name))
             if t not in class_mapper and btype not in class_mapper:
@@ -120,7 +120,7 @@ class ConfigParser(object):
     @classmethod
     def parse_flows(cls, toml_dict, class_mapper, **kargs):
         results = {}
-        for name, block in toml_dict.items():
+        for name, block in list(toml_dict.items()):
             t = 'flow'
             # t = block.get('type', None)
             # if t is None and btype not in class_mapper:

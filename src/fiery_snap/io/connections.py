@@ -1,6 +1,6 @@
 import csv
 import logging
-import Queue
+import queue
 import json
 from .message import Message
 from kombu import Connection
@@ -158,7 +158,7 @@ class KombuPubSubConnection(PubSubConnection):
                 try:
                     message = q.get(block=False)
                     logging.debug("Got a message from the %s queue" % (self.name))
-                except Queue.Empty:
+                except queue.Empty:
                     logging.debug("Got no messages from the %s queue" % (self.name))
                     message = None
                 except Exception as e:
@@ -192,7 +192,7 @@ class KombuPubSubConnection(PubSubConnection):
                 m = q.get(block=False)
                 m.ack()
 
-        except Queue.Empty:
+        except queue.Empty:
             pass
         logging.debug("Done with purge ...")
 
@@ -204,7 +204,7 @@ class KombuPubSubConnection(PubSubConnection):
                 message.requeue()
                 return False
             return False
-        except Queue.Empty:
+        except queue.Empty:
             return True
 
 

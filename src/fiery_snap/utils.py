@@ -49,7 +49,7 @@ def flatten_dictionary(ckey='', dict_obj={}):
     if len(ckey) > 0:
         new_key_fmt = "{}.{}"
 
-    for k, v in dict_obj.items():
+    for k, v in list(dict_obj.items()):
         nk = new_key_fmt.format(ckey, k)
         if isinstance(v, dict):
             results.update(flatten_dictionary(nk, v))

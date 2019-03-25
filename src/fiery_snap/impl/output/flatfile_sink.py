@@ -54,7 +54,7 @@ class SimpleFlatfile(IOBase):
         cnt = self.message_count if hasattr(self, 'message_count') else cnt
         messages = []
         #  conn == ..io.connection.Connection
-        for name, conn in self.publishers.items():
+        for name, conn in list(self.publishers.items()):
             pos = 0
             msgs = conn.consume(cnt=cnt)
             if msgs is None or len(msgs) == 0:

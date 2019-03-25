@@ -74,7 +74,7 @@ class PastebinClientImpl(object):
             js = {}
 
             if self.unix is None or \
-               long(p['unix']) > long(self.unix):
+               int(p['unix']) > int(self.unix):
                 self.unix = p['unix']
                 self.last_ts = unix_timestamp_to_format(p['unix'])
                 self.last_paste_key = p['paste_key']
@@ -160,7 +160,7 @@ class PastebinSource(IOBase):
         if self.use_mongo:
             handle_infos = self.read_mongo_handles()
             ts_handle_infos = self.config['last_tss']
-            for h, v in handle_infos.items():
+            for h, v in list(handle_infos.items()):
                 if h in ts_handle_infos:
                     ts_handle_infos[h].update(v)
                 elif self.update_from_mongo:
@@ -181,13 +181,13 @@ class PastebinSource(IOBase):
 
     def update_mongo_handles(self):
         ts_handle_infos = self.config['last_tss']
-        self.new_mongo_handle_client().inserts(ts_handle_infos.values(),
+        self.new_mongo_handle_client().inserts(list(ts_handle_infos.values()),
                                                dbname=self.dbname,
                                                colname=self.colname,
                                                update=True,)
         if self.update_from_mongo:
             handle_infos = self.read_mongo_handles()
-            for h, v in handle_infos.items():
+            for h, v in list(handle_infos.items()):
                 if h not in ts_handle_infos:
                     ts_handle_infos[h] = v
             self.config['last_tss'] = ts_handle_infos
@@ -369,7 +369,7 @@ class PastebinSource(IOBase):
 
     def publish_all_pastes(self, all_pastes):
         msgs = []
-        for handle, posts in all_pastes.items():
+        for handle, posts in list(all_pastes.items()):
             m = "Publishing msgs %d msgs from %s" % (len(posts), handle)
             logging.debug(m)
             for msg in posts:
