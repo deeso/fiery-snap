@@ -1,6 +1,8 @@
 from fiery_snap.impl.input.twitter_source import TwitterSource
+from fiery_snap.impl.input.twint_source import TwintSource
 from fiery_snap.impl.input.pastebin_source import PastebinSource
 from fiery_snap.impl.input.kombu_source import KombuClientProducer
+
 from fiery_snap.impl.input.iocs_source import *
 
 INPUT_CLASS_MAPS = {
@@ -12,4 +14,5 @@ INPUT_CLASS_MAPS = {
     IpSource.class_map_key(): IpSource,
     HashSource.class_map_key(): HashSource,
     HtmlSource.class_map_key(): HtmlSource,
+    TwintSource.class_map_key(): TwintSource
 }

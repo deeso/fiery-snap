@@ -1,7 +1,7 @@
 DOCKER_TAG=python37:latest
-DOCKER_NAME=pastebin-scraper
+DOCKER_NAME=twint-source
 
-SERVICE=19009
+SERVICE=19010
 
 # base how to set-up docker base on GIT_REPO variable
 TMP_DIR=tmp-git

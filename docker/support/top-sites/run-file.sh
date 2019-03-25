@@ -1,4 +1,4 @@
-DOCKER_TAG=python35:latest
+DOCKER_TAG=python37:latest
 DOCKER_NAME=top-sites
 
 SERVICE=10006

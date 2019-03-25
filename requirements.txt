@@ -1,10 +1,13 @@
 toml
+wheel
 kombu
 redis
 validators
-web.py
+#web.py
+web.py==0.40-dev1
 regex
 python-twitter
+twint
 bs4
 pymongo
 requests

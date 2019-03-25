@@ -1,4 +1,4 @@
-DOCKER_TAG=python27:latest
+DOCKER_TAG=python37:latest
 DOCKER_NAME=twitterscraper-email-results
 
 SERVICE=19007

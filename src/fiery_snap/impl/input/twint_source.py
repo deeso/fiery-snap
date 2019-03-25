@@ -1,37 +1,36 @@
-
 from fiery_snap.impl.util.page import Page, AddHandlesPage, \
-               ListHandlesPage, RemoveHandlesPage, ConsumePage, \
-               JsonUploadPage, TestPage
+    ListHandlesPage, RemoveHandlesPage, ConsumePage, \
+    JsonUploadPage, TestPage
 
 from fiery_snap.io.io_base import IOBase
 from fiery_snap.io.message import Message
 from fiery_snap.utils import parsedate_to_datetime
 from fiery_snap.impl.util.mongo_client_impl import MongoClientImpl
+from fiery_snap.utils import datetime_to_utc
 
 from datetime import datetime
 import json
-from twitter import Api
+
+import twint
+import twint.output
 import logging
 import traceback
 
 TS_FMT = "%Y-%m-%d %H:%M:%S"
 TIME_TS_STARTED = datetime.now().strftime(TS_FMT)
 
-class TwitterClientImpl(object):
+
+class TwintClientImpl(object):
     TWT_FMT = 'https://twitter.com/{}/status/{}'
     URL_LOC = 'https://t.co'
-    REQUIRED_CONFIG_PARAMS = ['consumer_key', 'consumer_secret',
-                              'access_token', 'access_token_secret',
-                              'handle', 'name']
-    OPTIONAL_CONFIG_PARAMS = [['sleep_on_rate_limit', True],
-                              ['last_id', None],
+    REQUIRED_CONFIG_PARAMS = ['handle', 'name']
+    OPTIONAL_CONFIG_PARAMS = [['last_id', None],
                               ['ignore_rts', True],
                               ['content', 'text'],
-                              ['limit', 10], 
+                              ['limit', 10],
                               ]
 
     def __init__(self, **kargs):
-        self.api = None
         self.last_id = None
         self.last_ts = None
         self.ignore_rts = True
@@ -43,9 +42,31 @@ class TwitterClientImpl(object):
             setattr(self, k, kargs.get(k, v))
 
         # print "lastid= %s" % str(self.last_id)
+
     def consume(self):
 
-        _handle = self.handle if self.handle[0] == '@' else '@'+self.handle
+        _handle = self.handle if self.handle[0] == '@' else '@' + self.handle
+        c = twint.Config()
+        c.Username = _handle
+        c.Store_object = True
+        c.Limit = 20
+        c.Profile_full = True
+
+        build_ts = lambda to: " ".join([getattr(to, name, '') for name in ['datestamp', 'timestamp', 'timezone']])
+
+        # TODO determine date and time of last read
+
+        # TODO read the tweets from the profile
+
+        # TODO filter tweets greater than the last read
+
+        # TODO read those tweets and metadata
+
+        # TODO convert the metadata to the expected metadata
+
+        # TODO update last read time update last read time
+
+
         msgs = []
         tweets = []
         keep_going = False
@@ -54,78 +75,72 @@ class TwitterClientImpl(object):
             keep_going = self.test_source()
         except:
             logging.debug(m.format(traceback.format_exc()))
-            try:
-                if self.api is not None:
-                    self.api = None
-                    keep_going = self.test_source()
-            except:
-                logging.debug(m.format(traceback.format_exc()))
 
         if not keep_going:
             return msgs
 
         try:
-            tweets = self.api.GetUserTimeline(screen_name=_handle,
-                                              count=self.limit,
-                                              since_id=self.last_id)
+            twint.run.Profile(c)
+            tweets = sorted([i for i in twint.output.tweets_object if i.id > self.last_id], key=lambda to: to.id)
+            twint.output.tweets_object = []
         except:
             m = 'Failed to retrieve posts with the following exception:\n{}'
             logging.debug(m.format(traceback.format_exc()))
 
+        last_id = self.last_ts
+        last_ts = self.last_id
+
         for p in tweets:
             js = {}
-            if p.text.startswith('RT') and self.ignore_rts:
+            if p.tweet.startswith('RT') and self.ignore_rts:
                 # Ignore retweets
                 continue
 
             if self.last_id is None or \
-               int(p.id) > int(self.last_id):
-                self.last_id = str(p.id)
-                self.last_ts = parsedate_to_datetime(p.created_at).strftime(TS_FMT)
+                    int(p.id) > int(self.last_id):
+                last_id = int(p.id)
+                last_ts = datetime_to_utc(datetimestamp=build_ts(p)).strftime(TS_FMT)
 
-            js['meta'] = p.AsDict()
-            js['tm_id'] = js['meta']['id']
+            js['meta'] = p.__dict__
+            js['tm_id'] = last_id
 
-            js['references'] = [self.TWT_FMT.format(self.handle, p.id), ]
-            js['link'] = self.TWT_FMT.format(self.handle, p.id)
-            js['timestamp'] = parsedate_to_datetime(p.created_at).strftime(TS_FMT)
+            js['references'] = [] # [self.TWT_FMT.format(self.handle, p.id), ]
+            js['link'] = p.link
+            js['timestamp'] = last_ts
             n = datetime.utcnow().strftime(TS_FMT)
             js['obtained_timestamp'] = n
-            if self.content is None or self.content not in js['meta']:
-                js['content'] = json.dumps(p.AsDict())
-                js['forced_content'] = True
-                # \/ for internal debugging (this does not JSON dump)
-                # js['raw'] = p
-            else:
-                js['content'] = getattr(p, self.content)
-                # \/ for internal debugging (this does not JSON dump)
-                js['forced_content'] = False
+            # if self.content is None or self.content not in js['meta']:
+            #     js['content'] = json.dumps(p.AsDict())
+            #     js['forced_content'] = True
+            #     # \/ for internal debugging (this does not JSON dump)
+            #     # js['raw'] = p
+            # else:
+            #     js['content'] = getattr(p, self.content)
+            #     # \/ for internal debugging (this does not JSON dump)
+            #     js['forced_content'] = False
+            js['forced_content'] = False
+            js['content'] = p.tweet
 
             js['source'] = self.name
             js['source_type'] = 'twitter'
-            js['user'] = self.handle.strip('@')
+            js['user'] = c.Username
             msgs.append(Message(js))
+
+        self.last_ts = last_ts
+        self.last_id = last_id
+
         return msgs
 
     def test_source(self):
-        if self.api is None:
-            w = self.sleep_on_rate_limit
-            self.api = Api(self.consumer_key,
-                           self.consumer_secret,
-                           self.access_token,
-                           self.access_token_secret,
-                           sleep_on_rate_limit=w)
-        if self.api is None:
-            raise Exception("Unable to connect to twitter")
-        return self.api.VerifyCredentials()
+        return True
 
 
-class TwitterSource(IOBase):
+class TwintSource(IOBase):
     TWITTER_SOURCE_MONGODB_NAME = 'twitter-source-mongo'
     TWITTER_SOURCE_MONGODB_DB = 'twitter-source'
     TWITTER_SOURCE_MONGODB_COL_HANDLES = 'handles'
 
-    KEY = 'simple-in-twitter'
+    KEY = 'twint-in-twitter'
     REQUIRED_CONFIG_PARAMS = ['name', 'consumer_key', 'consumer_secret',
                               'access_token', 'access_token_secret',
                               'handles', 'subscribers']
@@ -154,7 +169,7 @@ class TwitterSource(IOBase):
         ts_handle_infos = {}
         for h in self.config.get('handles', []):
             if h not in ts_handle_infos:
-                ts_handle_infos[h] = {'handle':h, 'timestamp':None, 'tm_id': None}
+                ts_handle_infos[h] = {'handle': h, 'timestamp': None, 'tm_id': None}
 
         self.config['ts_handle_infos'] = ts_handle_infos
         self.dbname = self.config.get('dbname')
@@ -164,7 +179,7 @@ class TwitterSource(IOBase):
         self.mongo_host = self.config.get('mongo_host')
         self.mongo_port = self.config.get('mongo_port')
         self.update_from_mongo = self.config.get('update_from_mongo')
-        
+
         self.use_mongo = self.mongo_uri is not None or self.mongo_host is not None
         if self.mongo_host is not None and self.mongo_uri is None:
             self.mongo_uri = "mongodb://%s:%s" % (self.mongo_host, self.mongo_port)
@@ -298,25 +313,25 @@ class TwitterSource(IOBase):
 
     def new_mongo_handle_client(self):
         client_params = {}
-        client_params['id_keys'] = ['handle',]
+        client_params['id_keys'] = ['handle', ]
         client_params['dbname'] = self.dbname
         client_params['colname'] = self.colname
         client_params['uri'] = self.mongo_uri
         client_params['name'] = self.mongo_name
         s = '{name}: {uri} {dbname}[{colname}]'.format(**client_params)
-        logging.debug("Initializing MongoClient to: %s"%(s))
+        logging.debug("Initializing MongoClient to: %s" % (s))
         return MongoClientImpl(**client_params)
 
     def read_mongo_handles(self):
-        handle_recs = self.new_mongo_handle_client().get_all(dbname=self.dbname, 
-                                                             colname=self.colname, 
+        handle_recs = self.new_mongo_handle_client().get_all(dbname=self.dbname,
+                                                             colname=self.colname,
                                                              obj_dict={})
         handle_infos = {}
         for h in handle_recs:
             k = h.get('handle')
-            v = {'timestamp':h.get('timestamp', None), 
-                 'tm_id':h.get('tm_id', None), 'handle':k}
-            # decided to set this so that we are not 
+            v = {'timestamp': h.get('timestamp', None),
+                 'tm_id': h.get('tm_id', None), 'handle': k}
+            # decided to set this so that we are not
             # unnecessarily searching in the past
             if v['timestamp'] == None:
                 v['timestamp'] = TIME_TS_STARTED
@@ -327,14 +342,14 @@ class TwitterSource(IOBase):
         ts_info = self.config['ts_handle_infos'].get(handle)
         if ts_info is None:
             return
-        i = self.new_mongo_handle_client().get_one(dbname=self.dbname, 
-                                                   colname=self.colname, 
+        i = self.new_mongo_handle_client().get_one(dbname=self.dbname,
+                                                   colname=self.colname,
                                                    obj_dict={'handle': handle})
         i.update(ts_info)
         r = self.new_mongo_handle_client().inserts([i, ],
-                                               dbname=self.dbname,
-                                               colname=self.colname,
-                                               update=True,)
+                                                   dbname=self.dbname,
+                                                   colname=self.colname,
+                                                   update=True, )
         return r
 
     def update_mongo_handles(self):
@@ -342,7 +357,7 @@ class TwitterSource(IOBase):
         self.new_mongo_handle_client().inserts(ts_handle_infos.values(),
                                                dbname=self.dbname,
                                                colname=self.colname,
-                                               update=True,)
+                                               update=True, )
         if self.update_from_mongo:
             handle_infos = self.read_mongo_handles()
             for h, v in handle_infos.items():
@@ -387,4 +402,4 @@ class TwitterSource(IOBase):
         return msgs
 
     def new_client(self, handle, last_id):
-        return TwitterClientImpl(handle=handle, last_id=last_id, **self.config)
+        return TwintClientImpl(handle=handle, last_id=last_id, **self.config)

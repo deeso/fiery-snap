@@ -1,10 +1,6 @@
-[inputs.twitter-source]
-    name = 'twitter-source'
-    type = 'simple-in-twitter'
-    consumer_key = 'CREATE_TWITTER_DEV_ACCOUNT'
-    consumer_secret = 'CREATE_TWITTER_DEV_ACCOUNT'
-    access_token = 'CREATE_TWITTER_DEV_ACCOUNT'
-    access_token_secret = 'CREATE_TWITTER_DEV_ACCOUNT'
+[inputs.twint-source]
+    name = 'twint-source'
+    type = 'twint-in-twitter'
     handles = [
 "0x009AD6_810", "Antelox", "Anti_Expl0it", "BlackBirdDr", "BleepinComputer",
 "BroadAnalysis", "CryptoInsane", "CyberCrimeWHQ", "DynamicAnalysis", "EKFiddle",
@@ -25,25 +21,72 @@
 "teamcymru", "thlnk3r", "tmmalanalyst", "unmaskparasites",
 "w1mp1k1ng", "x0rz", "ydklijnsma", "phish_total", "MaelSecurity", "0x7fff9", "AScarf0"
 # too noisy
-# "threatintelctr", 
+# "threatintelctr",
 ]
 
-    [inputs.twitter-source.service]
-        name = 'twitter-source_service'
-        listening_port = 19003
+    [inputs.twint-source.service]
+        name = 'twint-source_service'
+        listening_port = 19010
         listening_address = '0.0.0.0'
 
-    [inputs.twitter-source.subscribers.redis_queue]
+    [inputs.twint-source.subscribers.redis_queue]
         name = 'raw_twitter_feed'
         queue_name = "raw_twitter_feed"
         uri = "redis://redis-queue-host:6379"
         limit = 10000 # adjustable limit 10 posts per request for content
 
-    [inputs.twitter-source.subscribers.ms-raw-twitter]
+    [inputs.twint-source.subscribers.ms-raw-twitter]
         name = 'ms-raw-twitter'
         queue_name = "ms-raw-twitter"
         uri = "redis://redis-queue-host:6379"
         limit = 10000 # adjustable limit 10 posts per request for content
+
+#[inputs.twitter-source]
+#    name = 'twitter-source'
+#    type = 'simple-in-twitter'
+#    consumer_key = 'CREATE_TWITTER_DEV_ACCOUNT'
+#    consumer_secret = 'CREATE_TWITTER_DEV_ACCOUNT'
+#    access_token = 'CREATE_TWITTER_DEV_ACCOUNT'
+#    access_token_secret = 'CREATE_TWITTER_DEV_ACCOUNT'
+#    handles = [
+#"0x009AD6_810", "Antelox", "Anti_Expl0it", "BlackBirdDr", "BleepinComputer",
+#"BroadAnalysis", "CryptoInsane", "CyberCrimeWHQ", "DynamicAnalysis", "EKFiddle",
+#"EKwatcher", "EndgameInc", "GossiTheDog", "JAMESWT_MHT", "James_inthe_box",
+#"JaromirHorejsi", "Kafeine", "LockyBOT", "MalwareKiwi", "MalwareMuggle",
+#"MalwareTechBlog", "Malwarebytes", "Malwared_", "Mesiagh", "MlwrHpstr",
+#"PayloadSecurity", "PhysicalDrive0", "PraSuren_dra", "Racco42", "RempahRz",
+#"Ring0x0", "SecGuru", "Seifreed", "Stormshield", "TalosSecurity",
+#"TeMerc", "Unit42_Intel", "VK_Intel", "YouMayBeHacked", "Zerophage1337",
+#"_jsoo_", "abuse_ch", "antonivanovm", "azsxdvfbg", "baberpervez2",
+#"bad_packets", "bartblaze", "benkow_", "cyber_attacks", "danielhbohannon",
+#"demonslay335", "dvk01uk", "executemalware", "hackerfactor", "hasherezade",
+#"huntingmalware", "illegalFawn", "jeromesegura", "joshcannell", "jpcert",
+#"kafeine", "killamjr", "malc0de", "malware000", "malware_traffic",
+#"malwareforme", "malwareunicorn", "malwrhunterteam", "malwrmoustache", "mesa_matt",
+#"msftmmpc", "mwtracker", "nao_sec", "peterkruse", "phishingalert", "ransomwareblog",
+#"sS55752750", "snxperxero", "sourcefire", "syedkami70", "sysopfb",
+#"teamcymru", "thlnk3r", "tmmalanalyst", "unmaskparasites",
+#"w1mp1k1ng", "x0rz", "ydklijnsma", "phish_total", "MaelSecurity", "0x7fff9", "AScarf0"
+## too noisy
+## "threatintelctr",
+#]
+#
+#    [inputs.twitter-source.service]
+#        name = 'twitter-source_service'
+#        listening_port = 19003
+#        listening_address = '0.0.0.0'
+#
+#    [inputs.twitter-source.subscribers.redis_queue]
+#        name = 'raw_twitter_feed'
+#        queue_name = "raw_twitter_feed"
+#        uri = "redis://redis-queue-host:6379"
+#        limit = 10000 # adjustable limit 10 posts per request for content
+#
+#    [inputs.twitter-source.subscribers.ms-raw-twitter]
+#        name = 'ms-raw-twitter'
+#        queue_name = "ms-raw-twitter"
+#        uri = "redis://redis-queue-host:6379"
+#        limit = 10000 # adjustable limit 10 posts per request for content
 
 [outputs.mongo-sink-raw]
     uri = 'mongodb://mongodb-host:27017'

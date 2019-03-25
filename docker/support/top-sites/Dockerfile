@@ -1,4 +1,4 @@
-FROM python:3.5
+FROM python:3.7.2
 ADD config.toml config.toml
 ADD python_cmd.sh python_cmd.sh
 ADD main.py main.py

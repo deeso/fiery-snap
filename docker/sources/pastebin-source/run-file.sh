@@ -1,4 +1,4 @@
-DOCKER_TAG=python27:latest
+DOCKER_TAG=python37:latest
 DOCKER_NAME=pastebin-source
 
 SERVICE=19012

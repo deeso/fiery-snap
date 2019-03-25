@@ -1,3 +1,5 @@
+.idea/
+venv/
 internal-scripts/
 tests/internal_keys.toml
 tests/internal-test-data
