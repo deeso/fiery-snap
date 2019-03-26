@@ -7,7 +7,8 @@ validators
 web.py==0.40-dev1
 regex
 python-twitter
-twint
+#twint
+https://github.com/deeso/simple-pastebin-client/tarball/deeso-handle-group-none#egg=twint
 bs4
 pymongo
 requests
