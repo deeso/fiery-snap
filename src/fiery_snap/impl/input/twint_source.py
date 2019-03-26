@@ -25,7 +25,7 @@ TIME_TS_STARTED = datetime.now().strftime(TS_FMT)
 def run(config, callback=None):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(Twint(config).main(callback))
+    loop.run_until_complete(Twint(config).main())
 
 class TwintClientImpl(object):
     TWT_FMT = 'https://twitter.com/{}/status/{}'
