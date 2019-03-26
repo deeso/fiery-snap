@@ -17,6 +17,7 @@ import logging
 import traceback
 from twint.run import Twint
 import asyncio
+from datetime import timedelta
 
 TS_FMT = "%Y-%m-%d %H:%M:%S"
 TIME_TS_STARTED = datetime.now().strftime(TS_FMT)
@@ -50,16 +51,23 @@ class TwintClientImpl(object):
 
         # print "lastid= %s" % str(self.last_id)
 
+        if self.last_ts is None:
+            back_ts = datetime_to_utc() + timedelta(days=-30)
+            self.last_ts = back_ts.strftime(TS_FMT)
+
+
     def consume(self):
 
+        build_ts = lambda to: " ".join([getattr(to, name, '') for name in ['datestamp', 'timestamp', 'timezone']])
+        get_since = lambda last_ts: datetime.strptime(last_ts, TS_FMT).strftime('%Y-%m-%d')
         _handle = self.handle if self.handle[0] == '@' else '@' + self.handle
         c = twint.Config()
         c.Username = _handle
         c.Store_object = True
         c.Limit = 20
         c.Profile_full = True
+        c.Since = get_since(self.last_ts)
 
-        build_ts = lambda to: " ".join([getattr(to, name, '') for name in ['datestamp', 'timestamp', 'timezone']])
 
         # TODO determine date and time of last read
 
