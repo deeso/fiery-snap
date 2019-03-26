@@ -250,12 +250,16 @@ class IOBase(object):
             return True
         self.t.join()
 
+    def start_service(self):
+        START_SVC = False
+        if START_SVC and not self.svc.is_alive():
+            self.svc.start()
+
     def periodic_consume(self, sleep_time=30.0):
         sleep_time = self.config.get('sleep_time', sleep_time)
         logging.debug("Starting service with sleep time of %ds"%sleep_time)
         if self.t is None or not self.t.isAlive():
-            if not self.svc.is_alive():
-                self.svc.start()
+            self.start_service()
             self.KEEP_RUNNING = True
             self.t = threading.Thread(target=self._periodic_consume, args=(sleep_time,))
             self.t.start()
@@ -263,8 +267,7 @@ class IOBase(object):
         return False
 
     def _periodic_consume(self, sleep_time):
-        if not self.svc.is_alive():
-            self.svc.start()
+        self.start_service()
 
         while self.KEEP_RUNNING:
             self.consume_and_publish()
