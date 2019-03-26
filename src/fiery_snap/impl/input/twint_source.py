@@ -15,10 +15,17 @@ import twint
 import twint.output
 import logging
 import traceback
+from twint.run import Twint
+import asyncio
 
 TS_FMT = "%Y-%m-%d %H:%M:%S"
 TIME_TS_STARTED = datetime.now().strftime(TS_FMT)
 
+
+def run(config, callback=None):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(Twint(config).main(callback))
 
 class TwintClientImpl(object):
     TWT_FMT = 'https://twitter.com/{}/status/{}'
@@ -80,7 +87,8 @@ class TwintClientImpl(object):
             return msgs
 
         try:
-            twint.run.Profile(c)
+            # twint.run.Profile(c)
+            run(c, None)
             tweets = sorted([i for i in twint.output.tweets_object if i.id > self.last_id], key=lambda to: to.id)
             twint.output.tweets_object = []
         except:
