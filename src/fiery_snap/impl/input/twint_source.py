@@ -66,6 +66,7 @@ class TwintClientImpl(object):
         c.Store_object = True
         c.Limit = 20
         c.Profile_full = True
+        c.Debug = False
         c.Since = get_since(self.last_ts)
 
 
@@ -95,6 +96,7 @@ class TwintClientImpl(object):
             return msgs
 
         try:
+            logging.debug("Performing tweet collection for: {} since {}".format(_handle, c.Since))
             # twint.run.Profile(c)
             run(c, None)
             tweets = sorted([i for i in twint.output.tweets_object if i.id > self.last_id], key=lambda to: to.id)
