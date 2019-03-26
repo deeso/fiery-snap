@@ -12,5 +12,6 @@ bs4
 pymongo
 requests
 google-api-python-client
+aiohttp_socks
 https://github.com/deeso/ioc-regex/tarball/master#egg=ioc-regex
 https://github.com/deeso/simple-pastebin-client/tarball/master#egg=simple-pastebin-client

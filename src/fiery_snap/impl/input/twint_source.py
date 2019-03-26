@@ -141,9 +141,7 @@ class TwintSource(IOBase):
     TWITTER_SOURCE_MONGODB_COL_HANDLES = 'handles'
 
     KEY = 'twint-in-twitter'
-    REQUIRED_CONFIG_PARAMS = ['name', 'consumer_key', 'consumer_secret',
-                              'access_token', 'access_token_secret',
-                              'handles', 'subscribers']
+    REQUIRED_CONFIG_PARAMS = ['name', 'handles', 'subscribers']
     OPTIONAL_CONFIG_PARAMS = [['sleep_on_rate_limit', True],
                               ['ts_handle_infos', {}],
                               ['listening_port', 20202],
